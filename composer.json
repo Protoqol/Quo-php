@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "Composer package for Quo client.",
   "type": "metapackage",
-  "minimum-stability": "stable",
+  "minimum-stability": "RC",
   "authors": [
     {
       "name": "Quinten Justus",
