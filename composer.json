@@ -1,9 +1,7 @@
 {
   "name": "protoqol/quo",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Composer package for Quo client.",
-  "type": "metapackage",
-  "minimum-stability": "RC",
   "authors": [
     {
       "name": "Quinten Justus",
@@ -11,29 +9,17 @@
     }
   ],
   "require": {
-    "php": ">=8.1",
+    "php": ">=7.2.5",
     "symfony/polyfill-mbstring": "~1.0",
-    "guzzlehttp/guzzle": "^7.4"
-  },
-  "require-dev": {
-    "ext-iconv": "*",
-    "symfony/console": "^5.4|^6.0",
-    "symfony/process": "^5.4|^6.0",
-    "symfony/uid": "^5.4|^6.0",
-    "twig/twig": "^2.13|^3.0.4"
-  },
-  "conflict": {
-    "phpunit/phpunit": "<5.4.3",
-    "symfony/console": "<5.4"
-  },
-  "suggest": {
-    "ext-iconv": "To convert non-UTF-8 strings to UTF-8 (or symfony/polyfill-iconv in case ext-iconv cannot be used).",
-    "ext-intl": "To show region name in time zone dump",
-    "symfony/console": "To use the ServerDumpCommand and/or the bin/var-dump-server script"
+    "symfony/polyfill-php80": "^1.16",
+    "guzzlehttp/guzzle": "^7.4",
+    "ext-json": "*",
+    "ext-iconv": "*"
   },
   "autoload": {
     "files": [
-      "./src/VarDumper/Resources/functions/dump.php"
+      "src/Helpers/functions/quo.php",
+      "src/Helpers/functions/polyfill.php"
     ],
     "psr-4": {
       "Protoqol\\Quo\\": "src/"
