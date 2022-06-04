@@ -1,7 +1,7 @@
 {
   "name": "protoqol/quo",
-  "version": "0.1.0",
-  "description": "Debuggee side package.",
+  "version": "0.2.0",
+  "description": "PHP - Quo package.",
   "authors": [
     {
       "name": "Quinten Justus",
