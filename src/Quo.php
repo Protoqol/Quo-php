@@ -2,22 +2,29 @@
 
 namespace Protoqol\Quo;
 
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
-use Psr\Http\Message\ResponseInterface;
+use DateTime;
+use Exception;
 
 class Quo
 {
     private $client;
+    /**
+     * @var string
+     */
+    private $hostname;
+    /**
+     * @var int
+     */
+    private $port;
 
-    public function __construct(string $hostname, int $port)
+    /**
+     * @param string $hostname
+     * @param int    $port
+     */
+    public function __construct(string $hostname = "127.0.0.1", int $port = 8118)
     {
-        $this->client = new Client([
-            'base_uri' => "http://$hostname:$port",
-            'headers'  => [
-                "User-Agent" => "Protoqol/Quo",
-            ],
-        ]);
+        $this->hostname = $hostname;
+        $this->port     = $port;
     }
 
     /**
@@ -26,16 +33,100 @@ class Quo
      * @param string $dump
      * @param int    $id
      *
-     * @return ResponseInterface
-     * @throws GuzzleException
+     * @return bool|string
+     * @throws Exception
      */
-    public function sendToQuoClient(string $dump, int $id = 0): ResponseInterface
+    public function sendToQuoClient(string $dump, int $id = 0)
     {
-        $backtrace1 = debug_backtrace()[1];
-        $title      = $backtrace1['file'] . ':' . $backtrace1['line'];
+        $dump         = base64_encode($dump);
+        $title        = $this->getFileAndLineNumber();
+        $variableName = $this->getVariableNames();
+        $calltag      = $this->getCalltag($variableName);
+        $time         = $this->getTimeOfRequest();
+        $request      = curl_init();
+
+        curl_setopt_array($request, [
+            CURLOPT_URL            => "http://{$this->hostname}:{$this->port}/quo-tunnel",
+            CURLOPT_HEADER         => true,
+            CURLOPT_POST           => true,
+            CURLOPT_FRESH_CONNECT  => true,
+            CURLOPT_FORBID_REUSE   => true,
+            CURLOPT_TIMEOUT        => true,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_USERAGENT      => "Protoqol/Quo (v0.1.0)",
+            CURLOPT_HTTPHEADER     => [
+                "Accept: application/json",
+                "Content-Type: application/json",
+                "X-Quo-Token: " . hash('md5', time()),
+            ],
+            CURLOPT_POSTFIELDS     => json_encode([
+                'id'           => $id,
+                'callTag'      => $calltag,
+                "dump"         => $dump,
+                "backtrace"    => $title,
+                "time"         => $time,
+                'variableName' => $variableName,
+            ]),
+        ]);
+
+        $response = curl_exec($request);
+
+        if ($err = curl_error($request)) {
+            // Possible causes.
+            // - Client is not running.
+            // - Network access blocked.
+            // var_dump($err);
+        }
+
+        curl_close($request);
+
+        return $response;
+    }
+
+    /**
+     * Get timestamp.
+     *
+     * @return string
+     */
+    public function getTimeOfRequest(): string
+    {
+        return (new DateTime)->format('H:i:s');
+    }
+
+    /**
+     * Get calltag for call, this is unique per quo() call and can be used to identify grouped calls.
+     *
+     * @param $varName
+     *
+     * @return false|string
+     */
+    public function getCalltag($varName)
+    {
+        return hash("md5", $varName);
+    }
+
+    /**
+     * Get file and line number.
+     *
+     * @return string
+     */
+    public function getFileAndLineNumber(): string
+    {
+        $backtrace = debug_backtrace()[2];
+        return $backtrace['file'] . ':' . $backtrace['line'];
+    }
+
+    /**
+     * Get variable name(s) from backtrace.
+     *
+     * @return string
+     */
+    public function getVariableNames(): string
+    {
+        $backtrack = 2;
 
         $backtrace = debug_backtrace();
-        $src       = (file($backtrace[1]['file']))[$backtrace[1]['line'] - 1];
+        $src       = (file($backtrace[$backtrack]['file']))[$backtrace[$backtrack]['line'] - 1];
         $multiLine = !str_contains($src, 'quo(');
 
         if ($multiLine) {
@@ -43,7 +134,7 @@ class Quo
 
             $i = 1;
             while (!str_contains($src, 'quo(')) {
-                $src .= (file($backtrace[1]['file']))[$backtrace[1]['line'] - $i] . ($i === 1 ? "," : "");
+                $src .= (file($backtrace[$backtrack]['file']))[$backtrace[$backtrack]['line'] - $i] . ($i === 1 ? "," : "");
                 $i++;
             }
         }
@@ -59,15 +150,6 @@ class Quo
             $variableName = $multiLine ? substr($variableName, 1) : $variableName;
         }
 
-        return $this->client->post('/quo-tunnel', [
-            'body' => json_encode([
-                'id'           => $id,
-                'callTag'      => hash("md5", $variableName),
-                "dump"         => base64_encode($dump),
-                "backtrace"    => $title,
-                "time"         => (new \DateTime)->format('H:i:s'),
-                'variableName' => $variableName,
-            ]),
-        ]);
+        return preg_replace("/QuoConfig::set\(.*\),/", "", $variableName);
     }
 }

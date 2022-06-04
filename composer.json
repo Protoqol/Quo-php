@@ -1,7 +1,7 @@
 {
   "name": "protoqol/quo",
-  "version": "0.0.2",
-  "description": "Composer package for Quo client.",
+  "version": "0.1.0",
+  "description": "Debuggee side package.",
   "authors": [
     {
       "name": "Quinten Justus",
@@ -9,23 +9,25 @@
     }
   ],
   "require": {
-    "php": ">=7.2.5",
-    "symfony/polyfill-mbstring": "~1.0",
-    "symfony/polyfill-php80": "^1.16",
-    "guzzlehttp/guzzle": "^7.4",
+    "php": ">=7.1|>8.0",
     "ext-json": "*",
-    "ext-iconv": "*"
+    "ext-iconv": "*",
+    "ext-curl": "*"
+  },
+  "provide": {
+    "ext-mbstring": "*"
+  },
+  "suggest": {
+    "ext-mbstring": "For best VarDumper performance."
   },
   "autoload": {
     "files": [
       "src/Helpers/functions/quo.php",
-      "src/Helpers/functions/polyfill.php"
+      "src/Polyfill/polyfill.php",
+      "src/Polyfill/Mbstring/bootstrap.php"
     ],
     "psr-4": {
       "Protoqol\\Quo\\": "src/"
     }
-  },
-  "bin": [
-    "Resources/bin/var-dump-server"
-  ]
+  }
 }
