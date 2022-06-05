@@ -20,7 +20,7 @@ class Quo
      */
     public function __construct(QuoConfig $config)
     {
-        $this->request = new QuoRequest($config->getHostname(), $config->getPort());
+        $this->request = new QuoRequest($config->getHostname(), $config->getPort(), true);
     }
 
     /**
@@ -47,7 +47,6 @@ class Quo
                 // var_dump($e);
             }
         }
-        dump($quo);
 
         foreach ($args as $argument) {
             try {
@@ -74,8 +73,6 @@ class Quo
      */
     private function send(string $dump)
     {
-        $dump = base64_encode($dump);
-
         $this->request->setBody(QuoPayload::make($dump));
 
         $response = $this->request->send();

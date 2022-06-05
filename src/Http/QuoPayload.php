@@ -74,7 +74,7 @@ class QuoPayload
      */
     private function getFileAndLineNr(): string
     {
-        $backtrace = debug_backtrace()[2];
+        $backtrace = debug_backtrace()[6];
         return $backtrace['file'] . ':' . $backtrace['line'];
     }
 
@@ -86,7 +86,7 @@ class QuoPayload
     private function getVariableNames()
     {
         // Amount of files to backtrack to.
-        $backtrack = 3;
+        $backtrack = 6;
 
         $backtrace = debug_backtrace();
         $src       = (file($backtrace[$backtrack]['file']))[$backtrace[$backtrack]['line'] - 1];

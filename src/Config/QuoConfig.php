@@ -41,7 +41,7 @@ class QuoConfig
      */
     public static function make(): QuoConfig
     {
-        return new self(self::getConfigKey('http.DEFAULT_HOSTNAME'), self::getConfigKey('http.DEFAULT_PORT'));
+        return new self(self::getConfigKey('http.HOSTNAME'), self::getConfigKey('http.PORT'));
     }
 
     /**
@@ -62,7 +62,7 @@ class QuoConfig
      *
      * @return QuoConfig
      */
-    public static function set(string $hostname = 'localhost', int $port = 8118): QuoConfig
+    public static function set(string $hostname = 'localhost', int $port = 7312): QuoConfig
     {
         return new self($hostname, $port);
     }
@@ -97,7 +97,7 @@ class QuoConfig
      */
     private static function getConfigKey(string $key)
     {
-        $file = dirname(__DIR__) . DIRECTORY_SEPARATOR . self::$defaultIniLocation;
+        $file = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . self::$defaultIniLocation;
 
         if (file_exists($file) && is_readable($file)) {
             $ini = parse_ini_file($file, true);
@@ -125,7 +125,7 @@ class QuoConfig
      */
     private static function setConfigKey(string $key, $value): bool
     {
-        $file = dirname(__DIR__) . DIRECTORY_SEPARATOR . self::$defaultIniLocation;
+        $file = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . self::$defaultIniLocation;
         $str  = "# Default quo configuration, this is for internal use only unless stated otherwise.\r\n";
 
         if (file_exists($file) && is_writable($file)) {
@@ -138,9 +138,9 @@ class QuoConfig
             $str .= "\r\n[$sectionName]\r\n";
             foreach ($section as $entry => $val) {
                 if ($key === $sectionName . '.' . $entry) {
-                    $str .= $entry . '=' . $value . "\r\n";
+                    $str .= $entry . ' = ' . $value . "\r\n";
                 } else {
-                    $str .= $entry . '=' . $val . "\r\n";
+                    $str .= $entry . ' = ' . $val . "\r\n";
                 }
             }
         }

@@ -20,6 +20,9 @@
   "suggest": {
     "ext-mbstring": "For the best VarDumper performance."
   },
+  "bin": [
+    "bin/quo"
+  ],
   "autoload": {
     "files": [
       "src/functions/quo.php",

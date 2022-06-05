@@ -19,6 +19,11 @@ class QuoRequest
     private $client;
 
     /**
+     * @var string
+     */
+    private $connectionError;
+
+    /**
      * @var string[]
      */
     private $httpHeaders = [
@@ -34,13 +39,18 @@ class QuoRequest
     /**
      * @param string $hostname
      * @param int    $port
+     * @param bool   $verbose
      */
-    public function __construct(string $hostname, int $port)
+    public function __construct(string $hostname, int $port, bool $verbose = false)
     {
         $this->hostname = $hostname;
         $this->port     = $port;
         $this->client   = curl_init();
         $this->setHeaders();
+
+        if ($verbose) {
+            curl_setopt($this->client, CURLOPT_VERBOSE, true);
+        }
     }
 
     /**
@@ -84,7 +94,17 @@ class QuoRequest
      */
     public function getError(): string
     {
-        return curl_error($this->client);
+        return $this->connectionError;
+    }
+
+    /**
+     * Capture errors before curl connection is closed.
+     *
+     * @return void
+     */
+    private function captureErrors()
+    {
+        $this->connectionError = curl_error($this->client);
     }
 
     /**
@@ -95,6 +115,8 @@ class QuoRequest
     public function send()
     {
         $response = curl_exec($this->client);
+
+        $this->captureErrors();
 
         curl_close($this->client);
 

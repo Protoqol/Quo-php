@@ -1,0 +1,106 @@
+#!/usr/bin/env php
+<?php
+
+if (!isset($argv[1], $argv[2])) {
+    echo "Not enough arguments were supplied. Expected `./quo \$hostname \$port`";
+    exit(1);
+}
+
+if (!empty($argv[1])) {
+    $currentVal     = getConfigKey('http.HOSTNAME');
+    $noUpdateSignal = false;
+
+    if ($currentVal == $argv[1]) {
+        echo "Info: http.HOSTNAME - no update, value is the same, {$currentVal} => {$argv[1]}.\r\n";
+        $noUpdateSignal = true;
+    }
+
+    if (!$noUpdateSignal) {
+        setConfigKey("http.HOSTNAME", $argv[1]);
+
+        if (getConfigKey('http.HOSTNAME') == $argv[1]) {
+            echo "Success: updated http.HOSTNAME {$currentVal} => {$argv[1]}\r\n";
+        } else {
+            echo "Warning: http.HOSTNAME has not been updated.\r\n\r\n";
+        }
+    }
+
+    unset($currentVal, $noUpdateSignal);
+}
+
+if (!empty($argv[2])) {
+    $currentVal     = getConfigKey('http.PORT');
+    $noUpdateSignal = false;
+
+    if ($currentVal == $argv[2]) {
+        echo "Info: http.PORT - no update, value is the same, {$currentVal} => {$argv[2]}.\r\n";
+        $noUpdateSignal = true;
+    }
+
+    if (!$noUpdateSignal) {
+        setConfigKey("http.PORT", $argv[2]);
+
+        if (getConfigKey('http.PORT') == $argv[2]) {
+            echo "Success: Updated http.PORT {$currentVal} => {$argv[2]}\r\n";
+        } else {
+            echo "Warning: http.PORT has not been updated.\r\n\r\n";
+        }
+    }
+}
+
+exit(1);
+
+/**
+ * Get value from meta/quo.ini by key.
+ *
+ * @param string $key
+ *
+ * @return mixed|null
+ * @throws \Exception
+ */
+function getConfigKey(string $key)
+{
+    $file = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'meta/quo.ini';
+
+    if (file_exists($file) && is_readable($file)) {
+        $ini = parse_ini_file($file, true);
+    } else {
+        throw new Exception('Config file not readable or missing at: ' . $file);
+    }
+
+    $split = explode('.', $key);
+
+    return $ini[$split[0]][$split[1]] ?? null;
+}
+
+/**
+ * @param string $key
+ * @param        $value
+ *
+ * @return bool
+ * @throws Exception
+ */
+function setConfigKey(string $key, $value): bool
+{
+    $file = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'meta/quo.ini';
+    $str  = "# Default quo configuration, this is for internal use only unless stated otherwise.\r\n";
+
+    if (file_exists($file) && is_writable($file)) {
+        $ini = parse_ini_file($file, true);
+    } else {
+        throw new Exception('Config file not writeable or missing at: ' . $file);
+    }
+
+    foreach ($ini as $sectionName => $section) {
+        $str .= "\r\n[$sectionName]\r\n";
+        foreach ($section as $entry => $val) {
+            if ($key === $sectionName . '.' . $entry) {
+                $str .= $entry . '=' . $value . "\r\n";
+            } else {
+                $str .= $entry . '=' . $val . "\r\n";
+            }
+        }
+    }
+
+    return (bool)file_put_contents($file, $str);
+}
