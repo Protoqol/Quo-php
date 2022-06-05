@@ -18,16 +18,22 @@
     "ext-mbstring": "*"
   },
   "suggest": {
-    "ext-mbstring": "For best VarDumper performance."
+    "ext-mbstring": "For the best VarDumper performance."
   },
   "autoload": {
     "files": [
-      "src/Helpers/functions/quo.php",
+      "src/functions/quo.php",
       "src/Polyfill/polyfill.php",
       "src/Polyfill/Mbstring/bootstrap.php"
     ],
     "psr-4": {
       "Protoqol\\Quo\\": "src/"
+    }
+  },
+  "extra": {
+    "thanks": {
+      "name": "symfony/var-dumper",
+      "url": "https://github.com/symfony/var-dumper"
     }
   }
 }

@@ -142,9 +142,15 @@ class HtmlDumper extends CliDumper
     }
 
     /**
-     * {@inheritdoc}
+     * Get HTML formatted output as string
+     *
+     * @param Data  $data
+     * @param       $output
+     * @param array $extraDisplayOptions
+     *
+     * @return string|null
      */
-    public function dump(Data $data, $output = null, array $extraDisplayOptions = [])
+    public function dump(Data $data, $output = null, array $extraDisplayOptions = []): ?string
     {
         $this->extraDisplayOptions = $extraDisplayOptions;
         $result                    = parent::dump($data, $output);
@@ -165,24 +171,6 @@ class HtmlDumper extends CliDumper
             return $this->dumpHeader;
         }
         return $this->dumpHeader;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function dumpString(Cursor $cursor, string $str, bool $bin, int $cut)
-    {
-        if ('' === $str && isset($cursor->attr['img-data'], $cursor->attr['content-type'])) {
-            $this->dumpKey($cursor);
-            $this->line .= $this->style('default', $cursor->attr['img-size'] ?? '', []);
-            $this->line .= $cursor->depth >= $this->displayOptions['maxDepth'] ? ' <samp class=quo-dump-compact>' : ' <samp class=quo-dump-expanded>';
-            $this->endValue($cursor);
-            $this->line .= $this->indentPad;
-            $this->line .= sprintf('<img src="data:%s;base64,%s" /></samp>', $cursor->attr['content-type'], base64_encode($cursor->attr['img-data']));
-            $this->endValue($cursor);
-        } else {
-            parent::dumpString($cursor, $str, $bin, $cut);
-        }
     }
 
     /**

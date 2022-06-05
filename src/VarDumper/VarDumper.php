@@ -33,7 +33,7 @@ class VarDumper
         }
 
         $dumper = new HtmlDumper();
-        $dumper->appendDumpPrefix("<i data-searchable='" . self::searchAbleString($variable) . "' class='type-$type'>$type$count</i>");
+        $dumper->appendDumpPrefix("<i data-searchable='" . self::searchableString($variable) . "' class='type-$type'>$type$count</i>");
 
         return $dumper->dump($clonedVar);
     }
@@ -43,7 +43,7 @@ class VarDumper
      *
      * @return string
      */
-    private static function searchAbleString($var)
+    private static function searchableString($var): string
     {
         return json_encode($var);
     }

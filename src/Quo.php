@@ -2,154 +2,91 @@
 
 namespace Protoqol\Quo;
 
-use DateTime;
 use Exception;
+use Protoqol\Quo\Config\QuoConfig;
+use Protoqol\Quo\Http\QuoPayload;
+use Protoqol\Quo\Http\QuoRequest;
+use Protoqol\Quo\VarDumper\VarDumper;
 
 class Quo
 {
-    private $client;
     /**
-     * @var string
+     * @var QuoRequest $request
      */
-    private $hostname;
-    /**
-     * @var int
-     */
-    private $port;
+    private $request;
 
     /**
-     * @param string $hostname
-     * @param int    $port
+     * @param QuoConfig $config
      */
-    public function __construct(string $hostname = "127.0.0.1", int $port = 8118)
+    public function __construct(QuoConfig $config)
     {
-        $this->hostname = $hostname;
-        $this->port     = $port;
+        $this->request = new QuoRequest($config->getHostname(), $config->getPort());
+    }
+
+    /**
+     * Make new quo instance.
+     *
+     * @return array|mixed
+     */
+    public static function make()
+    {
+        $args = func_get_arg(0);
+
+        if (empty($args)) {
+            return [];
+        }
+
+        if ($args[0] instanceof QuoConfig) {
+            $quo = new Quo($args[0]);
+            unset($args[0]);
+        } else {
+            try {
+                $quo = new Quo(QuoConfig::make());
+            } catch (Exception $e) {
+                // Config error.
+                // var_dump($e);
+            }
+        }
+        dump($quo);
+
+        foreach ($args as $argument) {
+            try {
+                ob_start();
+                VarDumper::dump($argument);
+                $dump = ob_get_contents();
+                ob_end_clean();
+                $quo->send($dump);
+            } catch (Exception $e) {
+                // Something probably went wrong with the VarDumper.
+                // var_dump($e);
+            }
+        }
+
+        return $args;
     }
 
     /**
      * Send to Quo Client.
      *
      * @param string $dump
-     * @param int    $id
      *
      * @return bool|string
-     * @throws Exception
      */
-    public function sendToQuoClient(string $dump, int $id = 0)
+    private function send(string $dump)
     {
-        $dump         = base64_encode($dump);
-        $title        = $this->getFileAndLineNumber();
-        $variableName = $this->getVariableNames();
-        $calltag      = $this->getCalltag($variableName);
-        $time         = $this->getTimeOfRequest();
-        $request      = curl_init();
+        $dump = base64_encode($dump);
 
-        curl_setopt_array($request, [
-            CURLOPT_URL            => "http://{$this->hostname}:{$this->port}/quo-tunnel",
-            CURLOPT_HEADER         => true,
-            CURLOPT_POST           => true,
-            CURLOPT_FRESH_CONNECT  => true,
-            CURLOPT_FORBID_REUSE   => true,
-            CURLOPT_TIMEOUT        => true,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_USERAGENT      => "Protoqol/Quo (v0.1.0)",
-            CURLOPT_HTTPHEADER     => [
-                "Accept: application/json",
-                "Content-Type: application/json",
-                "X-Quo-Token: " . hash('md5', time()),
-            ],
-            CURLOPT_POSTFIELDS     => json_encode([
-                'id'           => $id,
-                'callTag'      => $calltag,
-                "dump"         => $dump,
-                "backtrace"    => $title,
-                "time"         => $time,
-                'variableName' => $variableName,
-            ]),
-        ]);
+        $this->request->setBody(QuoPayload::make($dump));
 
-        $response = curl_exec($request);
+        $response = $this->request->send();
 
-        if ($err = curl_error($request)) {
+        if ($err = $this->request->getError()) {
             // Possible causes.
             // - Client is not running.
             // - Network access blocked.
             // var_dump($err);
         }
 
-        curl_close($request);
-
         return $response;
-    }
-
-    /**
-     * Get timestamp.
-     *
-     * @return string
-     */
-    public function getTimeOfRequest(): string
-    {
-        return (new DateTime)->format('H:i:s');
-    }
-
-    /**
-     * Get calltag for call, this is unique per quo() call and can be used to identify grouped calls.
-     *
-     * @param $varName
-     *
-     * @return false|string
-     */
-    public function getCalltag($varName)
-    {
-        return hash("md5", $varName);
-    }
-
-    /**
-     * Get file and line number.
-     *
-     * @return string
-     */
-    public function getFileAndLineNumber(): string
-    {
-        $backtrace = debug_backtrace()[2];
-        return $backtrace['file'] . ':' . $backtrace['line'];
-    }
-
-    /**
-     * Get variable name(s) from backtrace.
-     *
-     * @return string
-     */
-    public function getVariableNames(): string
-    {
-        $backtrack = 2;
-
-        $backtrace = debug_backtrace();
-        $src       = (file($backtrace[$backtrack]['file']))[$backtrace[$backtrack]['line'] - 1];
-        $multiLine = !str_contains($src, 'quo(');
-
-        if ($multiLine) {
-            $src = "";
-
-            $i = 1;
-            while (!str_contains($src, 'quo(')) {
-                $src .= (file($backtrace[$backtrack]['file']))[$backtrace[$backtrack]['line'] - $i] . ($i === 1 ? "," : "");
-                $i++;
-            }
-        }
-
-        $pattern      = '#(.*)quo *?\( *?(.*) *?\)(.*)#i';
-        $match        = preg_replace($pattern, '$2', $src);
-        $variableName = trim(str_replace("quo(", "", preg_replace('/\s+/', '', $match)));
-
-        $variableNames = explode(",", $variableName);
-        $variableName  = implode(",", $multiLine ? array_reverse($variableNames) : $variableNames);
-
-        if (count($variableNames) > 1) {
-            $variableName = $multiLine ? substr($variableName, 1) : $variableName;
-        }
-
-        return preg_replace("/QuoConfig::set\(.*\),/", "", $variableName);
     }
 }
