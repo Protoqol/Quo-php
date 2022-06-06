@@ -11,7 +11,9 @@
 
 namespace Protoqol\Quo\VarDumper\Caster;
 
+use Memcached;
 use Protoqol\Quo\VarDumper\Cloner\Stub;
+use ReflectionClass;
 
 /**
  * @author Jan Schädlich <jan.schaedlich@sensiolabs.de>
@@ -23,11 +25,11 @@ class MemcachedCaster
     private static $optionConstants;
     private static $defaultOptions;
 
-    public static function castMemcached(\Memcached $c, array $a, Stub $stub, bool $isNested)
+    public static function castMemcached(Memcached $c, array $a, Stub $stub, bool $isNested)
     {
         $a += [
-            Caster::PREFIX_VIRTUAL.'servers' => $c->getServerList(),
-            Caster::PREFIX_VIRTUAL.'options' => new EnumStub(
+            Caster::PREFIX_VIRTUAL . 'servers' => $c->getServerList(),
+            Caster::PREFIX_VIRTUAL . 'options' => new EnumStub(
                 self::getNonDefaultOptions($c)
             ),
         ];
@@ -35,9 +37,9 @@ class MemcachedCaster
         return $a;
     }
 
-    private static function getNonDefaultOptions(\Memcached $c): array
+    private static function getNonDefaultOptions(Memcached $c): array
     {
-        self::$defaultOptions = self::$defaultOptions ?? self::discoverDefaultOptions();
+        self::$defaultOptions  = self::$defaultOptions ?? self::discoverDefaultOptions();
         self::$optionConstants = self::$optionConstants ?? self::getOptionConstants();
 
         $nonDefaultOptions = [];
@@ -52,10 +54,10 @@ class MemcachedCaster
 
     private static function discoverDefaultOptions(): array
     {
-        $defaultMemcached = new \Memcached();
+        $defaultMemcached = new Memcached();
         $defaultMemcached->addServer('127.0.0.1', 11211);
 
-        $defaultOptions = [];
+        $defaultOptions        = [];
         self::$optionConstants = self::$optionConstants ?? self::getOptionConstants();
 
         foreach (self::$optionConstants as $constantKey => $value) {
@@ -67,7 +69,7 @@ class MemcachedCaster
 
     private static function getOptionConstants(): array
     {
-        $reflectedMemcached = new \ReflectionClass(\Memcached::class);
+        $reflectedMemcached = new ReflectionClass(Memcached::class);
 
         $optionConstants = [];
         foreach ($reflectedMemcached->getConstants() as $constantKey => $value) {

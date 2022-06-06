@@ -13,6 +13,9 @@ namespace Protoqol\Quo\VarDumper\Caster;
 
 use Protoqol\Quo\VarDumper\Cloner\Stub;
 
+use function count;
+use function is_string;
+
 /**
  * Casts a caster's Stub.
  *
@@ -25,15 +28,15 @@ class StubCaster
     public static function castStub(Stub $c, array $a, Stub $stub, bool $isNested)
     {
         if ($isNested) {
-            $stub->type = $c->type;
-            $stub->class = $c->class;
-            $stub->value = $c->value;
+            $stub->type   = $c->type;
+            $stub->class  = $c->class;
+            $stub->value  = $c->value;
             $stub->handle = $c->handle;
-            $stub->cut = $c->cut;
-            $stub->attr = $c->attr;
+            $stub->cut    = $c->cut;
+            $stub->attr   = $c->attr;
 
-            if (Stub::TYPE_REF === $c->type && !$c->class && \is_string($c->value) && !preg_match('//u', $c->value)) {
-                $stub->type = Stub::TYPE_STRING;
+            if (Stub::TYPE_REF === $c->type && !$c->class && is_string($c->value) && !preg_match('//u', $c->value)) {
+                $stub->type  = Stub::TYPE_STRING;
                 $stub->class = Stub::STRING_BINARY;
             }
 
@@ -51,7 +54,7 @@ class StubCaster
     public static function cutInternals($obj, array $a, Stub $stub, bool $isNested)
     {
         if ($isNested) {
-            $stub->cut += \count($a);
+            $stub->cut += count($a);
 
             return [];
         }
@@ -62,17 +65,17 @@ class StubCaster
     public static function castEnum(EnumStub $c, array $a, Stub $stub, bool $isNested)
     {
         if ($isNested) {
-            $stub->class = $c->dumpKeys ? '' : null;
+            $stub->class  = $c->dumpKeys ? '' : null;
             $stub->handle = 0;
-            $stub->value = null;
-            $stub->cut = $c->cut;
-            $stub->attr = $c->attr;
+            $stub->value  = null;
+            $stub->cut    = $c->cut;
+            $stub->attr   = $c->attr;
 
             $a = [];
 
             if ($c->value) {
                 foreach (array_keys($c->value) as $k) {
-                    $keys[] = !isset($k[0]) || "\0" !== $k[0] ? Caster::PREFIX_VIRTUAL.$k : $k;
+                    $keys[] = !isset($k[0]) || "\0" !== $k[0] ? Caster::PREFIX_VIRTUAL . $k : $k;
                 }
                 // Preserve references with array_combine()
                 $a = array_combine($keys, $c->value);

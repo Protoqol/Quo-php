@@ -11,8 +11,16 @@
 
 namespace Protoqol\Quo\VarDumper\Dumper;
 
+use InvalidArgumentException;
 use Protoqol\Quo\VarDumper\Cloner\Cursor;
 use Protoqol\Quo\VarDumper\Cloner\Data;
+
+use function is_string;
+use function ord;
+use function strlen;
+
+use const ENT_QUOTES;
+use const JSON_FORCE_OBJECT;
 
 /**
  * HtmlDumper dumps variables as HTML.
@@ -76,15 +84,25 @@ class HtmlDumper extends CliDumper
 
     private $data;
 
-    /**
-     * {@inheritdoc}
-     */
     public function __construct($output = null, string $charset = null, int $flags = 0)
     {
         AbstractDumper::__construct($output, $charset, $flags);
         $this->dumpId                           = 'quo-dump-' . mt_rand();
-        $this->displayOptions['fileLinkFormat'] = ini_get('xdebug.file_link_format') ?: get_cfg_var('xdebug.file_link_format');
+        $this->displayOptions['fileLinkFormat'] = ini_get('xdebug.file_link_format') ?: get_cfg_var(
+            'xdebug.file_link_format'
+        );
         $this->styles                           = static::$themes['dark'] ?? self::$themes['dark'];
+    }
+
+    public function setTheme(string $themeName)
+    {
+        if (!isset(static::$themes[$themeName])) {
+            throw new InvalidArgumentException(
+                sprintf('Theme "%s" does not exist in class "%s".', $themeName, static::class)
+            );
+        }
+
+        $this->setStyles(static::$themes[$themeName]);
     }
 
     /**
@@ -96,15 +114,6 @@ class HtmlDumper extends CliDumper
         $this->styles         = $styles + $this->styles;
     }
 
-    public function setTheme(string $themeName)
-    {
-        if (!isset(static::$themes[$themeName])) {
-            throw new \InvalidArgumentException(sprintf('Theme "%s" does not exist in class "%s".', $themeName, static::class));
-        }
-
-        $this->setStyles(static::$themes[$themeName]);
-    }
-
     /**
      * Configures display options.
      *
@@ -114,14 +123,6 @@ class HtmlDumper extends CliDumper
     {
         $this->headerIsDumped = false;
         $this->displayOptions = $displayOptions + $this->displayOptions;
-    }
-
-    /**
-     * Sets an HTML header that will be dumped once in the output stream.
-     */
-    public function setDumpHeader(?string $header)
-    {
-        $this->dumpHeader = $header;
     }
 
     /**
@@ -161,19 +162,6 @@ class HtmlDumper extends CliDumper
     }
 
     /**
-     * Dumps the HTML header.
-     */
-    protected function getDumpHeader()
-    {
-        $this->headerIsDumped = $this->outputStream ?? $this->lineDumper;
-
-        if (null !== $this->dumpHeader) {
-            return $this->dumpHeader;
-        }
-        return $this->dumpHeader;
-    }
-
-    /**
      * {@inheritdoc}
      */
     public function enterHash(Cursor $cursor, int $type, $class, bool $hasChild)
@@ -207,6 +195,57 @@ class HtmlDumper extends CliDumper
     /**
      * {@inheritdoc}
      */
+    protected function dumpLine(int $depth, bool $endOfValue = false)
+    {
+        if (-1 === $this->lastDepth) {
+            $this->line = sprintf($this->dumpPrefix, $this->dumpId, $this->indentPad) . $this->line;
+        }
+        if ($this->headerIsDumped !== ($this->outputStream ?? $this->lineDumper)) {
+            $this->line = $this->getDumpHeader() . $this->line;
+        }
+
+        if (-1 === $depth) {
+            $args = ['"' . $this->dumpId . '"'];
+            if ($this->extraDisplayOptions) {
+                $args[] = json_encode($this->extraDisplayOptions, JSON_FORCE_OBJECT);
+            }
+            // Replace is for BC
+            $this->line .= sprintf(str_replace('"%s"', '%s', $this->dumpSuffix), implode(', ', $args));
+        }
+        $this->lastDepth = $depth;
+
+        $this->line = mb_encode_numericentity($this->line, [0x80, 0x10FFFF, 0, 0x1FFFFF], 'UTF-8');
+
+        if (-1 === $depth) {
+            AbstractDumper::dumpLine(0);
+        }
+        AbstractDumper::dumpLine($depth);
+    }
+
+    /**
+     * Dumps the HTML header.
+     */
+    protected function getDumpHeader()
+    {
+        $this->headerIsDumped = $this->outputStream ?? $this->lineDumper;
+
+        if (null !== $this->dumpHeader) {
+            return $this->dumpHeader;
+        }
+        return $this->dumpHeader;
+    }
+
+    /**
+     * Sets an HTML header that will be dumped once in the output stream.
+     */
+    public function setDumpHeader(?string $header)
+    {
+        $this->dumpHeader = $header;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function leaveHash(Cursor $cursor, int $type, $class, bool $hasChild, int $cut)
     {
         $this->dumpEllipsis($cursor, $hasChild, $cut);
@@ -233,28 +272,59 @@ class HtmlDumper extends CliDumper
             }
             $r = ('#' !== $v[0] ? 1 - ('@' !== $v[0]) : 2) . substr($value, 1);
 
-            return sprintf('<a class=quo-dump-ref href=#%s-ref%s title="%d occurrences">%s</a>', $this->dumpId, $r, 1 + $attr['count'], $v);
+            return sprintf(
+                '<a class=quo-dump-ref href=#%s-ref%s title="%d occurrences">%s</a>',
+                $this->dumpId,
+                $r,
+                1 + $attr['count'],
+                $v
+            );
         }
 
         if ('const' === $style && isset($attr['value'])) {
-            $style .= sprintf(' title="%s"', esc(is_scalar($attr['value']) ? $attr['value'] : json_encode($attr['value'])));
-        } else if ('public' === $style) {
-            $style .= sprintf(' title="%s"', empty($attr['dynamic']) ? 'Public property' : 'Runtime added dynamic property');
-        } else if ('str' === $style && 1 < $attr['length']) {
-            $style .= sprintf(' title="%d%s characters"', $attr['length'], $attr['binary'] ? ' binary or non-UTF-8' : '');
-        } else if ('note' === $style && 0 < ($attr['depth'] ?? 0) && false !== $c = strrpos($value, '\\')) {
-            $style .= ' title=""';
-            $attr  += [
-                'ellipsis'      => \strlen($value) - $c,
-                'ellipsis-type' => 'note',
-                'ellipsis-tail' => 1,
-            ];
-        } else if ('protected' === $style) {
-            $style .= ' title="Protected property"';
-        } else if ('meta' === $style && isset($attr['title'])) {
-            $style .= sprintf(' title="%s"', esc($this->utf8Encode($attr['title'])));
-        } else if ('private' === $style) {
-            $style .= sprintf(' title="Private property defined in class:&#10;`%s`"', esc($this->utf8Encode($attr['class'])));
+            $style .= sprintf(
+                ' title="%s"',
+                esc(is_scalar($attr['value']) ? $attr['value'] : json_encode($attr['value']))
+            );
+        } else {
+            if ('public' === $style) {
+                $style .= sprintf(
+                    ' title="%s"',
+                    empty($attr['dynamic']) ? 'Public property' : 'Runtime added dynamic property'
+                );
+            } else {
+                if ('str' === $style && 1 < $attr['length']) {
+                    $style .= sprintf(
+                        ' title="%d%s characters"',
+                        $attr['length'],
+                        $attr['binary'] ? ' binary or non-UTF-8' : ''
+                    );
+                } else {
+                    if ('note' === $style && 0 < ($attr['depth'] ?? 0) && false !== $c = strrpos($value, '\\')) {
+                        $style .= ' title=""';
+                        $attr  += [
+                            'ellipsis'      => strlen($value) - $c,
+                            'ellipsis-type' => 'note',
+                            'ellipsis-tail' => 1,
+                        ];
+                    } else {
+                        if ('protected' === $style) {
+                            $style .= ' title="Protected property"';
+                        } else {
+                            if ('meta' === $style && isset($attr['title'])) {
+                                $style .= sprintf(' title="%s"', esc($this->utf8Encode($attr['title'])));
+                            } else {
+                                if ('private' === $style) {
+                                    $style .= sprintf(
+                                        ' title="Private property defined in class:&#10;`%s`"',
+                                        esc($this->utf8Encode($attr['class']))
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
         $map = static::$controlCharsMap;
 
@@ -265,44 +335,54 @@ class HtmlDumper extends CliDumper
             }
             $label = esc(substr($value, -$attr['ellipsis']));
             $style = str_replace(' title="', " title=\"$v\n", $style);
-            $v     = sprintf('<span class=%s>%s</span>', $class, substr($v, 0, -\strlen($label)));
+            $v     = sprintf('<span class=%s>%s</span>', $class, substr($v, 0, -strlen($label)));
 
             if (!empty($attr['ellipsis-tail'])) {
-                $tail = \strlen(esc(substr($value, -$attr['ellipsis'], $attr['ellipsis-tail'])));
+                $tail = strlen(esc(substr($value, -$attr['ellipsis'], $attr['ellipsis-tail'])));
                 $v    .= sprintf('<span class=%s>%s</span>%s', $class, substr($label, 0, $tail), substr($label, $tail));
             } else {
                 $v .= $label;
             }
         }
 
-        $v = "<span class=quo-dump-{$style}>" . preg_replace_callback(static::$controlCharsRx, function ($c) use ($map) {
-                $s = $b = '<span class="quo-dump-default';
-                $c = $c[$i = 0];
-                if ($ns = "\r" === $c[$i] || "\n" === $c[$i]) {
-                    $s .= ' quo-dump-ns';
-                }
-                $s .= '">';
-                do {
-                    if (("\r" === $c[$i] || "\n" === $c[$i]) !== $ns) {
-                        $s .= '</span>' . $b;
-                        if ($ns = !$ns) {
-                            $s .= ' quo-dump-ns';
-                        }
-                        $s .= '">';
+        $v = "<span class=quo-dump-{$style}>" .
+            preg_replace_callback(
+                static::$controlCharsRx,
+                function ($c) use ($map) {
+                    $s = $b = '<span class="quo-dump-default';
+                    $c = $c[$i = 0];
+                    if ($ns = "\r" === $c[$i] || "\n" === $c[$i]) {
+                        $s .= ' quo-dump-ns';
                     }
+                    $s .= '">';
+                    do {
+                        if (("\r" === $c[$i] || "\n" === $c[$i]) !== $ns) {
+                            $s .= '</span>' . $b;
+                            if ($ns = !$ns) {
+                                $s .= ' quo-dump-ns';
+                            }
+                            $s .= '">';
+                        }
 
-                    $s .= $map[$c[$i]] ?? sprintf('\x%02X', \ord($c[$i]));
-                } while (isset($c[++$i]));
+                        $s .= $map[$c[$i]] ?? sprintf('\x%02X', ord($c[$i]));
+                    } while (isset($c[++$i]));
 
-                return $s . '</span>';
-            }, $v) . '</span>';
+                    return $s . '</span>';
+                },
+                $v
+            ) . '</span>';
 
         if (isset($attr['file']) && $href = $this->getSourceLink($attr['file'], $attr['line'] ?? 0)) {
             $attr['href'] = $href;
         }
         if (isset($attr['href'])) {
             $target = isset($attr['file']) ? '' : ' target="_blank"';
-            $v      = sprintf('<a href="%s"%s rel="noopener noreferrer">%s</a>', esc($this->utf8Encode($attr['href'])), $target, $v);
+            $v      = sprintf(
+                '<a href="%s"%s rel="noopener noreferrer">%s</a>',
+                esc($this->utf8Encode($attr['href'])),
+                $target,
+                $v
+            );
         }
         if (isset($attr['lang'])) {
             $v = sprintf('<code class="%s">%s</code>', esc($attr['lang']), $v);
@@ -311,42 +391,12 @@ class HtmlDumper extends CliDumper
         return $v;
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function dumpLine(int $depth, bool $endOfValue = false)
-    {
-        if (-1 === $this->lastDepth) {
-            $this->line = sprintf($this->dumpPrefix, $this->dumpId, $this->indentPad) . $this->line;
-        }
-        if ($this->headerIsDumped !== ($this->outputStream ?? $this->lineDumper)) {
-            $this->line = $this->getDumpHeader() . $this->line;
-        }
-
-        if (-1 === $depth) {
-            $args = ['"' . $this->dumpId . '"'];
-            if ($this->extraDisplayOptions) {
-                $args[] = json_encode($this->extraDisplayOptions, \JSON_FORCE_OBJECT);
-            }
-            // Replace is for BC
-            $this->line .= sprintf(str_replace('"%s"', '%s', $this->dumpSuffix), implode(', ', $args));
-        }
-        $this->lastDepth = $depth;
-
-        $this->line = mb_encode_numericentity($this->line, [0x80, 0x10FFFF, 0, 0x1FFFFF], 'UTF-8');
-
-        if (-1 === $depth) {
-            AbstractDumper::dumpLine(0);
-        }
-        AbstractDumper::dumpLine($depth);
-    }
-
     private function getSourceLink(string $file, int $line)
     {
         $options = $this->extraDisplayOptions + $this->displayOptions;
 
         if ($fmt = $options['fileLinkFormat']) {
-            return \is_string($fmt) ? strtr($fmt, ['%f' => $file, '%l' => $line]) : $fmt->format($file, $line);
+            return is_string($fmt) ? strtr($fmt, ['%f' => $file, '%l' => $line]) : $fmt->format($file, $line);
         }
 
         return false;
@@ -355,5 +405,5 @@ class HtmlDumper extends CliDumper
 
 function esc(string $str)
 {
-    return htmlspecialchars($str, \ENT_QUOTES, 'UTF-8');
+    return htmlspecialchars($str, ENT_QUOTES, 'UTF-8');
 }

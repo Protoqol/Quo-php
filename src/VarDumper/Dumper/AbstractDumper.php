@@ -13,6 +13,14 @@ namespace Protoqol\Quo\VarDumper\Dumper;
 
 use Protoqol\Quo\VarDumper\Cloner\Data;
 use Protoqol\Quo\VarDumper\Cloner\DumperInterface;
+use RuntimeException;
+
+use function function_exists;
+use function is_callable;
+use function is_string;
+
+use const LC_NUMERIC;
+use const PHP_VERSION_ID;
 
 /**
  * Abstract mechanism for dumping a Data object.
@@ -46,36 +54,11 @@ abstract class AbstractDumper implements DataDumperInterface, DumperInterface
     {
         $this->flags = $flags;
         $this->setCharset($charset ?: ini_get('php.output_encoding') ?: ini_get('default_charset') ?: 'UTF-8');
-        $this->decimalPoint = \PHP_VERSION_ID >= 80000 ? '.' : localeconv()['decimal_point'];
+        $this->decimalPoint = PHP_VERSION_ID >= 80000 ? '.' : localeconv()['decimal_point'];
         $this->setOutput($output ?: static::$defaultOutput);
-        if (!$output && \is_string(static::$defaultOutput)) {
+        if (!$output && is_string(static::$defaultOutput)) {
             static::$defaultOutput = $this->outputStream;
         }
-    }
-
-    /**
-     * Sets the output destination of the dumps.
-     *
-     * @param callable|resource|string $output A line dumper callable, an opened stream or an output path
-     *
-     * @return callable|resource|string The previous output destination
-     */
-    public function setOutput($output)
-    {
-        $prev = $this->outputStream ?? $this->lineDumper;
-
-        if (\is_callable($output)) {
-            $this->outputStream = null;
-            $this->lineDumper   = $output;
-        } else {
-            if (\is_string($output)) {
-                $output = fopen($output, 'w');
-            }
-            $this->outputStream = $output;
-            $this->lineDumper   = [$this, 'echoLine'];
-        }
-
-        return $prev;
     }
 
     /**
@@ -91,6 +74,31 @@ abstract class AbstractDumper implements DataDumperInterface, DumperInterface
         $charset = null === $charset || 'UTF-8' === $charset || 'UTF8' === $charset ? 'CP1252' : $charset;
 
         $this->charset = $charset;
+
+        return $prev;
+    }
+
+    /**
+     * Sets the output destination of the dumps.
+     *
+     * @param callable|resource|string $output A line dumper callable, an opened stream or an output path
+     *
+     * @return callable|resource|string The previous output destination
+     */
+    public function setOutput($output)
+    {
+        $prev = $this->outputStream ?? $this->lineDumper;
+
+        if (is_callable($output)) {
+            $this->outputStream = null;
+            $this->lineDumper   = $output;
+        } else {
+            if (is_string($output)) {
+                $output = fopen($output, 'w');
+            }
+            $this->outputStream = $output;
+            $this->lineDumper   = [$this, 'echoLine'];
+        }
 
         return $prev;
     }
@@ -119,10 +127,15 @@ abstract class AbstractDumper implements DataDumperInterface, DumperInterface
      */
     public function dump(Data $data, $output = null)
     {
-        $this->decimalPoint = \PHP_VERSION_ID >= 80000 ? '.' : localeconv()['decimal_point'];
+        $this->decimalPoint = PHP_VERSION_ID >= 80000 ? '.' : localeconv()['decimal_point'];
 
-        if ($locale = $this->flags & (self::DUMP_COMMA_SEPARATOR | self::DUMP_TRAILING_COMMA) ? setlocale(\LC_NUMERIC, 0) : null) {
-            setlocale(\LC_NUMERIC, 'C');
+        if (
+            $locale = $this->flags & (self::DUMP_COMMA_SEPARATOR | self::DUMP_TRAILING_COMMA) ? setlocale(
+                LC_NUMERIC,
+                0
+            ) : null
+        ) {
+            setlocale(LC_NUMERIC, 'C');
         }
 
         if ($returnDump = true === $output) {
@@ -146,7 +159,7 @@ abstract class AbstractDumper implements DataDumperInterface, DumperInterface
                 $this->setOutput($prevOutput);
             }
             if ($locale) {
-                setlocale(\LC_NUMERIC, $locale);
+                setlocale(LC_NUMERIC, $locale);
             }
         }
 
@@ -186,8 +199,10 @@ abstract class AbstractDumper implements DataDumperInterface, DumperInterface
             return $s;
         }
 
-        if (!\function_exists('iconv')) {
-            throw new \RuntimeException('Unable to convert a non-UTF-8 string to UTF-8: required function iconv() does not exist. You should install ext-iconv or symfony/polyfill-iconv.');
+        if (!function_exists('iconv')) {
+            throw new RuntimeException(
+                'Unable to convert a non-UTF-8 string to UTF-8: required function iconv() does not exist. You should install ext-iconv or symfony/polyfill-iconv.'
+            );
         }
 
         if (false !== $c = @iconv($this->charset, 'UTF-8', $s)) {

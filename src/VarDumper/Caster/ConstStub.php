@@ -13,6 +13,8 @@ namespace Protoqol\Quo\VarDumper\Caster;
 
 use Protoqol\Quo\VarDumper\Cloner\Stub;
 
+use function func_num_args;
+
 /**
  * Represents a PHP constant and its value.
  *
@@ -23,7 +25,7 @@ class ConstStub extends Stub
     public function __construct(string $name, $value = null)
     {
         $this->class = $name;
-        $this->value = 1 < \func_num_args() ? $value : $name;
+        $this->value = 1 < func_num_args() ? $value : $name;
     }
 
     /**
@@ -31,6 +33,6 @@ class ConstStub extends Stub
      */
     public function __toString()
     {
-        return (string) $this->value;
+        return (string)$this->value;
     }
 }

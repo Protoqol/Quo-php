@@ -14,6 +14,18 @@ namespace Protoqol\Quo\VarDumper\Dumper;
 use Protoqol\Quo\VarDumper\Cloner\Cursor;
 use Protoqol\Quo\VarDumper\Cloner\Stub;
 
+use function count;
+use function function_exists;
+use function is_int;
+use function is_resource;
+use function is_string;
+use function ord;
+use function strlen;
+
+use const DIRECTORY_SEPARATOR;
+use const INF;
+use const PHP_SAPI;
+
 /**
  * CliDumper dumps variables for command line output.
  *
@@ -23,7 +35,15 @@ class CliDumper extends AbstractDumper
 {
     public static $defaultColors;
     public static $defaultOutput = 'php://stdout';
-
+    protected static $controlCharsRx  = '/[\x00-\x1F\x7F]+/';
+    protected static $controlCharsMap = [
+        "\t"   => '\t',
+        "\n"   => '\n',
+        "\v"   => '\v',
+        "\f"   => '\f',
+        "\r"   => '\r',
+        "\033" => '\e',
+    ];
     protected $colors;
     protected $maxStringWidth = 0;
     protected $styles         = [
@@ -41,17 +61,6 @@ class CliDumper extends AbstractDumper
         'key'       => '38;5;113',
         'index'     => '38;5;38',
     ];
-
-    protected static $controlCharsRx  = '/[\x00-\x1F\x7F]+/';
-    protected static $controlCharsMap = [
-        "\t"   => '\t',
-        "\n"   => '\n',
-        "\v"   => '\v',
-        "\f"   => '\f',
-        "\r"   => '\r',
-        "\033" => '\e',
-    ];
-
     protected $collapseNextHash = false;
     protected $expandNextHash   = false;
 
@@ -68,7 +77,7 @@ class CliDumper extends AbstractDumper
     {
         parent::__construct($output, $charset, $flags);
 
-        if ('\\' === \DIRECTORY_SEPARATOR && !$this->isWindowsTrueColor()) {
+        if ('\\' === DIRECTORY_SEPARATOR && !$this->isWindowsTrueColor()) {
             // Use only the base 16 xterm colors when using ANSICON or standard Windows 10 CLI
             $this->setStyles([
                 'default' => '31',
@@ -83,7 +92,46 @@ class CliDumper extends AbstractDumper
             ]);
         }
 
-        $this->displayOptions['fileLinkFormat'] = ini_get('xdebug.file_link_format') ?: get_cfg_var('xdebug.file_link_format') ?: 'file://%f#L%l';
+        $this->displayOptions['fileLinkFormat'] = ini_get('xdebug.file_link_format') ?: get_cfg_var(
+            'xdebug.file_link_format'
+        ) ?: 'file://%f#L%l';
+    }
+
+    /**
+     * Returns true if the Windows terminal supports true color.
+     *
+     * Note that this does not check an output stream, but relies on environment
+     * variables from known implementations, or a PHP and Windows version that
+     * supports true color.
+     */
+    private function isWindowsTrueColor(): bool
+    {
+        $result = 183 <= getenv('ANSICON_VER')
+            || 'ON' === getenv('ConEmuANSI')
+            || 'xterm' === getenv('TERM')
+            || 'Hyper' === getenv('TERM_PROGRAM');
+
+        if (!$result) {
+            $version = sprintf(
+                '%s.%s.%s',
+                PHP_WINDOWS_VERSION_MAJOR,
+                PHP_WINDOWS_VERSION_MINOR,
+                PHP_WINDOWS_VERSION_BUILD
+            );
+            $result  = $version >= '10.0.15063';
+        }
+
+        return $result;
+    }
+
+    /**
+     * Configures styles.
+     *
+     * @param array $styles A map of style names to style definitions
+     */
+    public function setStyles(array $styles)
+    {
+        $this->styles = $styles + $this->styles;
     }
 
     /**
@@ -100,16 +148,6 @@ class CliDumper extends AbstractDumper
     public function setMaxStringWidth(int $maxStringWidth)
     {
         $this->maxStringWidth = $maxStringWidth;
-    }
-
-    /**
-     * Configures styles.
-     *
-     * @param array $styles A map of style names to style definitions
-     */
-    public function setStyles(array $styles)
-    {
-        $this->styles = $styles + $this->styles;
     }
 
     /**
@@ -154,10 +192,10 @@ class CliDumper extends AbstractDumper
                 }
 
                 switch (true) {
-                    case \INF === $value:
+                    case INF === $value:
                         $value = 'INF';
                         break;
-                    case -\INF === $value:
+                    case -INF === $value:
                         $value = '-INF';
                         break;
                     case is_nan($value):
@@ -192,6 +230,309 @@ class CliDumper extends AbstractDumper
     }
 
     /**
+     * Dumps a key in a hash structure.
+     */
+    protected function dumpKey(Cursor $cursor)
+    {
+        if (null !== $key = $cursor->hashKey) {
+            if ($cursor->hashKeyIsBinary) {
+                $key = $this->utf8Encode($key);
+            }
+            $attr  = ['binary' => $cursor->hashKeyIsBinary];
+            $bin   = $cursor->hashKeyIsBinary ? 'b' : '';
+            $style = 'key';
+            switch ($cursor->hashType) {
+                default:
+                case Cursor::HASH_INDEXED:
+                    if (self::DUMP_LIGHT_ARRAY & $this->flags) {
+                        break;
+                    }
+                    $style = 'index';
+                case Cursor::HASH_ASSOC:
+                    if (is_int($key)) {
+                        $this->line .= $this->style($style, $key) . ' => ';
+                    } else {
+                        $this->line .= $bin . '"' . $this->style($style, $key) . '" => ';
+                    }
+                    break;
+
+                case Cursor::HASH_RESOURCE:
+                    $key = "\0~\0" . $key;
+                case Cursor::HASH_OBJECT:
+                    if (!isset($key[0]) || "\0" !== $key[0]) {
+                        $this->line .= '<span class="property-public">public</span> ' . $bin . $this->style(
+                            'public',
+                            $key
+                        ) . ': ';
+                    } else {
+                        if (0 < strpos($key, "\0", 1)) {
+                            $key = explode("\0", substr($key, 1), 2);
+
+                            switch ($key[0][0]) {
+                                case '+': // User inserted keys
+                                    $attr['dynamic'] = true;
+                                    $this->line      .= '<span class="property-public">public</span> ' . $bin . '$' . $this->style(
+                                        'public',
+                                        $key[1],
+                                        $attr
+                                    ) . ': ';
+                                    break 2;
+                                case '~':
+                                    $style = 'meta';
+                                    if (isset($key[0][1])) {
+                                        parse_str(substr($key[0], 1), $attr);
+                                        $attr += ['binary' => $cursor->hashKeyIsBinary];
+                                    }
+                                    break;
+                                case '*':
+                                    $style = 'protected';
+                                    $bin   = '<span class="property-protected">protected</span> $' . $bin;
+                                    break;
+                                default:
+                                    $attr['class'] = $key[0];
+                                    $style         = 'private';
+                                    $bin           = '<span class="property-private">private</span> $' . $bin;
+                                    break;
+                            }
+
+                            if (isset($attr['collapse'])) {
+                                if ($attr['collapse']) {
+                                    $this->collapseNextHash = true;
+                                } else {
+                                    $this->expandNextHash = true;
+                                }
+                            }
+
+                            $this->line .= $bin . $this->style($style, $key[1], $attr) . ($attr['separator'] ?? ': ');
+                        } else {
+                            // This case should not happen
+                            $this->line .= '-' . $bin . '"' . $this->style('private', $key, ['class' => '']) . '": ';
+                        }
+                    }
+                    break;
+            }
+
+            if ($cursor->hardRefTo) {
+                $this->line .= $this->style(
+                    'ref',
+                    '&' . ($cursor->hardRefCount ? $cursor->hardRefTo : ''),
+                    ['count' => $cursor->hardRefCount]
+                ) . ' ';
+            }
+        }
+    }
+
+    /**
+     * Decorates a value with some style.
+     *
+     * @param string $style The type of style being applied
+     * @param string $value The value being styled
+     * @param array  $attr  Optional context information
+     *
+     * @return string
+     */
+    protected function style(string $style, string $value, array $attr = [])
+    {
+        if (null === $this->colors) {
+            $this->colors = $this->supportsColors();
+        }
+
+        if (null === $this->handlesHrefGracefully) {
+            $this->handlesHrefGracefully = 'JetBrains-JediTerm' !== getenv('TERMINAL_EMULATOR')
+                && (!getenv('KONSOLE_VERSION') || (int)getenv('KONSOLE_VERSION') > 201100);
+        }
+
+        if (isset($attr['ellipsis'], $attr['ellipsis-type'])) {
+            $prefix = substr($value, 0, -$attr['ellipsis']);
+            if (
+                'cli' === PHP_SAPI && 'path' === $attr['ellipsis-type'] && isset($_SERVER[$pwd = '\\' === DIRECTORY_SEPARATOR ? 'CD' : 'PWD']) && str_starts_with(
+                    $prefix,
+                    $_SERVER[$pwd]
+                )
+            ) {
+                $prefix = '.' . substr($prefix, strlen($_SERVER[$pwd]));
+            }
+            if (!empty($attr['ellipsis-tail'])) {
+                $prefix .= substr($value, -$attr['ellipsis'], $attr['ellipsis-tail']);
+                $value  = substr($value, -$attr['ellipsis'] + $attr['ellipsis-tail']);
+            } else {
+                $value = substr($value, -$attr['ellipsis']);
+            }
+
+            $value = $this->style('default', $prefix) . $this->style($style, $value);
+
+            goto href;
+        }
+
+        $map       = static::$controlCharsMap;
+        $startCchr = $this->colors ? "\033[m\033[{$this->styles['default']}m" : '';
+        $endCchr   = $this->colors ? "\033[m\033[{$this->styles[$style]}m" : '';
+        $value     = preg_replace_callback(static::$controlCharsRx, function ($c) use ($map, $startCchr, $endCchr) {
+            $s = $startCchr;
+            $c = $c[$i = 0];
+            do {
+                $s .= $map[$c[$i]] ?? sprintf('\x%02X', ord($c[$i]));
+            } while (isset($c[++$i]));
+
+            return $s . $endCchr;
+        }, $value, -1, $cchrCount);
+
+        if ($this->colors) {
+            if ($cchrCount && "\033" === $value[0]) {
+                $value = substr($value, strlen($startCchr));
+            } else {
+                $value = "\033[{$this->styles[$style]}m" . $value;
+            }
+            if ($cchrCount && str_ends_with($value, $endCchr)) {
+                $value = substr($value, 0, -strlen($endCchr));
+            } else {
+                $value .= "\033[{$this->styles['default']}m";
+            }
+        }
+
+        href:
+        if ($this->colors && $this->handlesHrefGracefully) {
+            if (isset($attr['file']) && $href = $this->getSourceLink($attr['file'], $attr['line'] ?? 0)) {
+                if ('note' === $style) {
+                    $value .= "\033]8;;{$href}\033\\^\033]8;;\033\\";
+                } else {
+                    $attr['href'] = $href;
+                }
+            }
+            if (isset($attr['href'])) {
+                $value = "\033]8;;{$attr['href']}\033\\{$value}\033]8;;\033\\";
+            }
+        } else {
+            if ($attr['if_links'] ?? false) {
+                return '';
+            }
+        }
+
+        return $value;
+    }
+
+    /**
+     * @return bool
+     */
+    protected function supportsColors()
+    {
+        if ($this->outputStream !== static::$defaultOutput) {
+            return $this->hasColorSupport($this->outputStream);
+        }
+        if (null !== static::$defaultColors) {
+            return static::$defaultColors;
+        }
+        if (isset($_SERVER['argv'][1])) {
+            $colors = $_SERVER['argv'];
+            $i      = count($colors);
+            while (--$i > 0) {
+                if (isset($colors[$i][5])) {
+                    switch ($colors[$i]) {
+                        case '--ansi':
+                        case '--color':
+                        case '--color=yes':
+                        case '--color=force':
+                        case '--color=always':
+                        case '--colors=always':
+                            return static::$defaultColors = true;
+
+                        case '--no-ansi':
+                        case '--color=no':
+                        case '--color=none':
+                        case '--color=never':
+                        case '--colors=never':
+                            return static::$defaultColors = false;
+                    }
+                }
+            }
+        }
+
+        $h = stream_get_meta_data($this->outputStream) + ['wrapper_type' => null];
+        $h = 'Output' === $h['stream_type'] && 'PHP' === $h['wrapper_type'] ? fopen(
+            'php://stdout',
+            'w'
+        ) : $this->outputStream;
+
+        return static::$defaultColors = $this->hasColorSupport($h);
+    }
+
+    /**
+     * Returns true if the stream supports colorization.
+     *
+     * Reference: Composer\XdebugHandler\Process::supportsColor
+     * https://github.com/composer/xdebug-handler
+     *
+     * @param mixed $stream A CLI output stream
+     */
+    private function hasColorSupport($stream): bool
+    {
+        if (!is_resource($stream) || 'stream' !== get_resource_type($stream)) {
+            return false;
+        }
+
+        // Follow https://no-color.org/
+        if (isset($_SERVER['NO_COLOR']) || false !== getenv('NO_COLOR')) {
+            return false;
+        }
+
+        if ('Hyper' === getenv('TERM_PROGRAM')) {
+            return true;
+        }
+
+        if (DIRECTORY_SEPARATOR === '\\') {
+            return (function_exists('sapi_windows_vt100_support')
+                    && @sapi_windows_vt100_support($stream))
+                || false !== getenv('ANSICON')
+                || 'ON' === getenv('ConEmuANSI')
+                || 'xterm' === getenv('TERM');
+        }
+
+        return stream_isatty($stream);
+    }
+
+    private function getSourceLink(string $file, int $line)
+    {
+        if ($fmt = $this->displayOptions['fileLinkFormat']) {
+            return is_string($fmt) ? strtr($fmt, [
+                '%f' => $file,
+                '%l' => $line,
+            ]) : ($fmt->format($file, $line) ?: 'file://' . $file . '#L' . $line);
+        }
+
+        return false;
+    }
+
+    protected function endValue(Cursor $cursor)
+    {
+        if (-1 === $cursor->hashType) {
+            return;
+        }
+
+        if (Stub::ARRAY_INDEXED === $cursor->hashType || Stub::ARRAY_ASSOC === $cursor->hashType) {
+            if (self::DUMP_TRAILING_COMMA & $this->flags && 0 < $cursor->depth) {
+                $this->line .= ',';
+            } else {
+                if (self::DUMP_COMMA_SEPARATOR & $this->flags && 1 < $cursor->hashLength - $cursor->hashIndex) {
+                    $this->line .= ',';
+                }
+            }
+        }
+
+        $this->dumpLine($cursor->depth, true);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function dumpLine(int $depth, bool $endOfValue = false)
+    {
+        if ($this->colors) {
+            $this->line = sprintf("\033[%sm%s\033[m", $this->styles['default'], $this->line);
+        }
+        parent::dumpLine($depth);
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function dumpString(Cursor $cursor, string $str, bool $bin, int $cut)
@@ -216,7 +557,7 @@ class CliDumper extends AbstractDumper
                 unset($str[1]);
                 $str[0] .= "\n";
             }
-            $m = \count($str) - 1;
+            $m = count($str) - 1;
             $i = $lineCut = 0;
 
             if (self::DUMP_STRING_LENGTH & $this->flags) {
@@ -262,8 +603,10 @@ class CliDumper extends AbstractDumper
                     if ($cut < 0) {
                         $this->line .= '…';
                         $lineCut    = 0;
-                    } else if ($cut) {
-                        $lineCut += $cut;
+                    } else {
+                        if ($cut) {
+                            $lineCut += $cut;
+                        }
                     }
                 }
                 if ($lineCut) {
@@ -299,19 +642,36 @@ class CliDumper extends AbstractDumper
 
         $class = $this->utf8Encode($class);
         if (Cursor::HASH_OBJECT === $type) {
-            $prefix = $class && 'stdClass' !== $class ? $this->style('note', $class, $attr) . (empty($attr['cut_hash']) ? ' {' : '') : '{';
-        } else if (Cursor::HASH_RESOURCE === $type) {
-            $prefix = $this->style('note', $class . ' resource', $attr) . ($hasChild ? ' {' : ' ');
+            $prefix = $class && 'stdClass' !== $class ? $this->style(
+                'note',
+                $class,
+                $attr
+            ) . (empty($attr['cut_hash']) ? ' {' : '') : '{';
         } else {
-            $prefix = $class && !(self::DUMP_LIGHT_ARRAY & $this->flags) ? $this->style('note', 'array:' . $class) . ' [' : '[';
+            if (Cursor::HASH_RESOURCE === $type) {
+                $prefix = $this->style('note', $class . ' resource', $attr) . ($hasChild ? ' {' : ' ');
+            } else {
+                $prefix = $class && !(self::DUMP_LIGHT_ARRAY & $this->flags) ? $this->style(
+                    'note',
+                    'array:' . $class
+                ) . ' [' : '[';
+            }
         }
 
         if (($cursor->softRefCount || 0 < $cursor->softRefHandle) && empty($attr['cut_hash'])) {
-            $prefix .= $this->style('ref', (Cursor::HASH_RESOURCE === $type ? '@' : '#') . (0 < $cursor->softRefHandle ? $cursor->softRefHandle : $cursor->softRefTo), ['count' => $cursor->softRefCount]);
-        } else if ($cursor->hardRefTo && !$cursor->refIndex && $class) {
-            $prefix .= $this->style('ref', '&' . $cursor->hardRefTo, ['count' => $cursor->hardRefCount]);
-        } else if (!$hasChild && Cursor::HASH_RESOURCE === $type) {
-            $prefix = substr($prefix, 0, -1);
+            $prefix .= $this->style(
+                'ref',
+                (Cursor::HASH_RESOURCE === $type ? '@' : '#') . (0 < $cursor->softRefHandle ? $cursor->softRefHandle : $cursor->softRefTo),
+                ['count' => $cursor->softRefCount]
+            );
+        } else {
+            if ($cursor->hardRefTo && !$cursor->refIndex && $class) {
+                $prefix .= $this->style('ref', '&' . $cursor->hardRefTo, ['count' => $cursor->hardRefCount]);
+            } else {
+                if (!$hasChild && Cursor::HASH_RESOURCE === $type) {
+                    $prefix = substr($prefix, 0, -1);
+                }
+            }
         }
 
         $this->line .= $prefix;
@@ -351,309 +711,5 @@ class CliDumper extends AbstractDumper
                 $this->dumpLine($cursor->depth + 1);
             }
         }
-    }
-
-    /**
-     * Dumps a key in a hash structure.
-     */
-    protected function dumpKey(Cursor $cursor)
-    {
-        if (null !== $key = $cursor->hashKey) {
-            if ($cursor->hashKeyIsBinary) {
-                $key = $this->utf8Encode($key);
-            }
-            $attr  = ['binary' => $cursor->hashKeyIsBinary];
-            $bin   = $cursor->hashKeyIsBinary ? 'b' : '';
-            $style = 'key';
-            switch ($cursor->hashType) {
-                default:
-                case Cursor::HASH_INDEXED:
-                    if (self::DUMP_LIGHT_ARRAY & $this->flags) {
-                        break;
-                    }
-                    $style = 'index';
-                case Cursor::HASH_ASSOC:
-                    if (\is_int($key)) {
-                        $this->line .= $this->style($style, $key) . ' => ';
-                    } else {
-                        $this->line .= $bin . '"' . $this->style($style, $key) . '" => ';
-                    }
-                    break;
-
-                case Cursor::HASH_RESOURCE:
-                    $key = "\0~\0" . $key;
-                case Cursor::HASH_OBJECT:
-                    if (!isset($key[0]) || "\0" !== $key[0]) {
-                        $this->line .= '<span class="property-public">public</span> ' . $bin . $this->style('public', $key) . ': ';
-                    } else if (0 < strpos($key, "\0", 1)) {
-                        $key = explode("\0", substr($key, 1), 2);
-
-                        switch ($key[0][0]) {
-                            case '+': // User inserted keys
-                                $attr['dynamic'] = true;
-                                $this->line      .= '<span class="property-public">public</span> ' . $bin . '$' . $this->style('public', $key[1], $attr) . ': ';
-                                break 2;
-                            case '~':
-                                $style = 'meta';
-                                if (isset($key[0][1])) {
-                                    parse_str(substr($key[0], 1), $attr);
-                                    $attr += ['binary' => $cursor->hashKeyIsBinary];
-                                }
-                                break;
-                            case '*':
-                                $style = 'protected';
-                                $bin   = '<span class="property-protected">protected</span> $' . $bin;
-                                break;
-                            default:
-                                $attr['class'] = $key[0];
-                                $style         = 'private';
-                                $bin           = '<span class="property-private">private</span> $' . $bin;
-                                break;
-                        }
-
-                        if (isset($attr['collapse'])) {
-                            if ($attr['collapse']) {
-                                $this->collapseNextHash = true;
-                            } else {
-                                $this->expandNextHash = true;
-                            }
-                        }
-
-                        $this->line .= $bin . $this->style($style, $key[1], $attr) . ($attr['separator'] ?? ': ');
-                    } else {
-                        // This case should not happen
-                        $this->line .= '-' . $bin . '"' . $this->style('private', $key, ['class' => '']) . '": ';
-                    }
-                    break;
-            }
-
-            if ($cursor->hardRefTo) {
-                $this->line .= $this->style('ref', '&' . ($cursor->hardRefCount ? $cursor->hardRefTo : ''), ['count' => $cursor->hardRefCount]) . ' ';
-            }
-        }
-    }
-
-    /**
-     * Decorates a value with some style.
-     *
-     * @param string $style The type of style being applied
-     * @param string $value The value being styled
-     * @param array  $attr  Optional context information
-     *
-     * @return string
-     */
-    protected function style(string $style, string $value, array $attr = [])
-    {
-        if (null === $this->colors) {
-            $this->colors = $this->supportsColors();
-        }
-
-        if (null === $this->handlesHrefGracefully) {
-            $this->handlesHrefGracefully = 'JetBrains-JediTerm' !== getenv('TERMINAL_EMULATOR')
-                && (!getenv('KONSOLE_VERSION') || (int)getenv('KONSOLE_VERSION') > 201100);
-        }
-
-        if (isset($attr['ellipsis'], $attr['ellipsis-type'])) {
-            $prefix = substr($value, 0, -$attr['ellipsis']);
-            if ('cli' === \PHP_SAPI && 'path' === $attr['ellipsis-type'] && isset($_SERVER[$pwd = '\\' === \DIRECTORY_SEPARATOR ? 'CD' : 'PWD']) && str_starts_with($prefix, $_SERVER[$pwd])) {
-                $prefix = '.' . substr($prefix, \strlen($_SERVER[$pwd]));
-            }
-            if (!empty($attr['ellipsis-tail'])) {
-                $prefix .= substr($value, -$attr['ellipsis'], $attr['ellipsis-tail']);
-                $value  = substr($value, -$attr['ellipsis'] + $attr['ellipsis-tail']);
-            } else {
-                $value = substr($value, -$attr['ellipsis']);
-            }
-
-            $value = $this->style('default', $prefix) . $this->style($style, $value);
-
-            goto href;
-        }
-
-        $map       = static::$controlCharsMap;
-        $startCchr = $this->colors ? "\033[m\033[{$this->styles['default']}m" : '';
-        $endCchr   = $this->colors ? "\033[m\033[{$this->styles[$style]}m" : '';
-        $value     = preg_replace_callback(static::$controlCharsRx, function ($c) use ($map, $startCchr, $endCchr) {
-            $s = $startCchr;
-            $c = $c[$i = 0];
-            do {
-                $s .= $map[$c[$i]] ?? sprintf('\x%02X', \ord($c[$i]));
-            } while (isset($c[++$i]));
-
-            return $s . $endCchr;
-        }, $value, -1, $cchrCount);
-
-        if ($this->colors) {
-            if ($cchrCount && "\033" === $value[0]) {
-                $value = substr($value, \strlen($startCchr));
-            } else {
-                $value = "\033[{$this->styles[$style]}m" . $value;
-            }
-            if ($cchrCount && str_ends_with($value, $endCchr)) {
-                $value = substr($value, 0, -\strlen($endCchr));
-            } else {
-                $value .= "\033[{$this->styles['default']}m";
-            }
-        }
-
-        href:
-        if ($this->colors && $this->handlesHrefGracefully) {
-            if (isset($attr['file']) && $href = $this->getSourceLink($attr['file'], $attr['line'] ?? 0)) {
-                if ('note' === $style) {
-                    $value .= "\033]8;;{$href}\033\\^\033]8;;\033\\";
-                } else {
-                    $attr['href'] = $href;
-                }
-            }
-            if (isset($attr['href'])) {
-                $value = "\033]8;;{$attr['href']}\033\\{$value}\033]8;;\033\\";
-            }
-        } else if ($attr['if_links'] ?? false) {
-            return '';
-        }
-
-        return $value;
-    }
-
-    /**
-     * @return bool
-     */
-    protected function supportsColors()
-    {
-        if ($this->outputStream !== static::$defaultOutput) {
-            return $this->hasColorSupport($this->outputStream);
-        }
-        if (null !== static::$defaultColors) {
-            return static::$defaultColors;
-        }
-        if (isset($_SERVER['argv'][1])) {
-            $colors = $_SERVER['argv'];
-            $i      = \count($colors);
-            while (--$i > 0) {
-                if (isset($colors[$i][5])) {
-                    switch ($colors[$i]) {
-                        case '--ansi':
-                        case '--color':
-                        case '--color=yes':
-                        case '--color=force':
-                        case '--color=always':
-                        case '--colors=always':
-                            return static::$defaultColors = true;
-
-                        case '--no-ansi':
-                        case '--color=no':
-                        case '--color=none':
-                        case '--color=never':
-                        case '--colors=never':
-                            return static::$defaultColors = false;
-                    }
-                }
-            }
-        }
-
-        $h = stream_get_meta_data($this->outputStream) + ['wrapper_type' => null];
-        $h = 'Output' === $h['stream_type'] && 'PHP' === $h['wrapper_type'] ? fopen('php://stdout', 'w') : $this->outputStream;
-
-        return static::$defaultColors = $this->hasColorSupport($h);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    protected function dumpLine(int $depth, bool $endOfValue = false)
-    {
-        if ($this->colors) {
-            $this->line = sprintf("\033[%sm%s\033[m", $this->styles['default'], $this->line);
-        }
-        parent::dumpLine($depth);
-    }
-
-    protected function endValue(Cursor $cursor)
-    {
-        if (-1 === $cursor->hashType) {
-            return;
-        }
-
-        if (Stub::ARRAY_INDEXED === $cursor->hashType || Stub::ARRAY_ASSOC === $cursor->hashType) {
-            if (self::DUMP_TRAILING_COMMA & $this->flags && 0 < $cursor->depth) {
-                $this->line .= ',';
-            } else if (self::DUMP_COMMA_SEPARATOR & $this->flags && 1 < $cursor->hashLength - $cursor->hashIndex) {
-                $this->line .= ',';
-            }
-        }
-
-        $this->dumpLine($cursor->depth, true);
-    }
-
-    /**
-     * Returns true if the stream supports colorization.
-     *
-     * Reference: Composer\XdebugHandler\Process::supportsColor
-     * https://github.com/composer/xdebug-handler
-     *
-     * @param mixed $stream A CLI output stream
-     */
-    private function hasColorSupport($stream): bool
-    {
-        if (!\is_resource($stream) || 'stream' !== get_resource_type($stream)) {
-            return false;
-        }
-
-        // Follow https://no-color.org/
-        if (isset($_SERVER['NO_COLOR']) || false !== getenv('NO_COLOR')) {
-            return false;
-        }
-
-        if ('Hyper' === getenv('TERM_PROGRAM')) {
-            return true;
-        }
-
-        if (\DIRECTORY_SEPARATOR === '\\') {
-            return (\function_exists('sapi_windows_vt100_support')
-                    && @sapi_windows_vt100_support($stream))
-                || false !== getenv('ANSICON')
-                || 'ON' === getenv('ConEmuANSI')
-                || 'xterm' === getenv('TERM');
-        }
-
-        return stream_isatty($stream);
-    }
-
-    /**
-     * Returns true if the Windows terminal supports true color.
-     *
-     * Note that this does not check an output stream, but relies on environment
-     * variables from known implementations, or a PHP and Windows version that
-     * supports true color.
-     */
-    private function isWindowsTrueColor(): bool
-    {
-        $result = 183 <= getenv('ANSICON_VER')
-            || 'ON' === getenv('ConEmuANSI')
-            || 'xterm' === getenv('TERM')
-            || 'Hyper' === getenv('TERM_PROGRAM');
-
-        if (!$result) {
-            $version = sprintf(
-                '%s.%s.%s',
-                PHP_WINDOWS_VERSION_MAJOR,
-                PHP_WINDOWS_VERSION_MINOR,
-                PHP_WINDOWS_VERSION_BUILD
-            );
-            $result  = $version >= '10.0.15063';
-        }
-
-        return $result;
-    }
-
-    private function getSourceLink(string $file, int $line)
-    {
-        if ($fmt = $this->displayOptions['fileLinkFormat']) {
-            return \is_string($fmt) ? strtr($fmt, [
-                '%f' => $file, '%l' => $line,
-            ]) : ($fmt->format($file, $line) ?: 'file://' . $file . '#L' . $line);
-        }
-
-        return false;
     }
 }

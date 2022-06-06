@@ -11,6 +11,7 @@
 
 namespace Protoqol\Quo\VarDumper\Caster;
 
+use Fiber;
 use Protoqol\Quo\VarDumper\Cloner\Stub;
 
 /**
@@ -20,7 +21,7 @@ use Protoqol\Quo\VarDumper\Cloner\Stub;
  */
 final class FiberCaster
 {
-    public static function castFiber(\Fiber $fiber, array $a, Stub $stub, bool $isNested, int $filter = 0)
+    public static function castFiber(Fiber $fiber, array $a, Stub $stub, bool $isNested, int $filter = 0)
     {
         $prefix = Caster::PREFIX_VIRTUAL;
 
@@ -36,7 +37,7 @@ final class FiberCaster
             $status = 'not started';
         }
 
-        $a[$prefix.'status'] = $status;
+        $a[$prefix . 'status'] = $status;
 
         return $a;
     }

@@ -11,8 +11,8 @@
 
 namespace Protoqol\Quo\VarDumper\Caster;
 
-use Ramsey\Uuid\UuidInterface;
 use Protoqol\Quo\VarDumper\Cloner\Stub;
+use Ramsey\Uuid\UuidInterface;
 
 /**
  * @author Grégoire Pineau <lyrixx@lyrixx.info>
@@ -22,7 +22,7 @@ final class UuidCaster
     public static function castRamseyUuid(UuidInterface $c, array $a, Stub $stub, bool $isNested): array
     {
         $a += [
-            Caster::PREFIX_VIRTUAL.'uuid' => (string) $c,
+            Caster::PREFIX_VIRTUAL . 'uuid' => (string)$c,
         ];
 
         return $a;

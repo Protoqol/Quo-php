@@ -2,26 +2,25 @@
 
 namespace Protoqol\Quo\Config;
 
+use Exception;
 use Protoqol\Quo\Exceptions\QuoConfigException;
 
 class QuoConfig
 {
-    /**
-     * @var string
-     */
-    private $hostname;
-
-    /**
-     * @var int
-     */
-    private $port;
-
     /**
      * Default, presumed, location of ini.
      *
      * @var string
      */
     private static $defaultIniLocation = 'meta/quo-config.ini';
+    /**
+     * @var string
+     */
+    private $hostname;
+    /**
+     * @var int
+     */
+    private $port;
 
     /**
      * @param string $hostname
@@ -37,11 +36,38 @@ class QuoConfig
      * Make default instance of QuoConfig.
      *
      * @return QuoConfig
-     * @throws \Exception
+     * @throws Exception
      */
     public static function make(): QuoConfig
     {
         return new self(self::get('http.HOSTNAME'), self::get('http.PORT'));
+    }
+
+    /**
+     * Get value from meta/quo-config.ini by key.
+     *
+     * @param string $key
+     *
+     * @return mixed|null
+     * @throws Exception
+     */
+    public static function get(string $key)
+    {
+        $file = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . self::$defaultIniLocation;
+
+        if (file_exists($file) && is_readable($file)) {
+            $ini = parse_ini_file($file, true);
+        } else {
+            throw new QuoConfigException('Config file not readable or missing at: ' . $file);
+        }
+
+        if (!str_contains($key, '.')) {
+            return $ini[$key] ?? null;
+        }
+
+        $split = explode('.', $key);
+
+        return $ini[$split[0]][$split[1]] ?? null;
     }
 
     /**
@@ -65,53 +91,6 @@ class QuoConfig
     public static function custom(string $hostname = 'localhost', int $port = 7312): QuoConfig
     {
         return new self($hostname, $port);
-    }
-
-    /**
-     * Get hostname.
-     *
-     * @return string
-     */
-    public function getHostname(): string
-    {
-        return $this->hostname;
-    }
-
-    /**
-     * Get port.
-     *
-     * @return int
-     */
-    public function getPort(): int
-    {
-        return $this->port;
-    }
-
-    /**
-     * Get value from meta/quo-config.ini by key.
-     *
-     * @param string $key
-     *
-     * @return mixed|null
-     * @throws \Exception
-     */
-    public static function get(string $key)
-    {
-        $file = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . self::$defaultIniLocation;
-
-        if (file_exists($file) && is_readable($file)) {
-            $ini = parse_ini_file($file, true);
-        } else {
-            throw new QuoConfigException('Config file not readable or missing at: ' . $file);
-        }
-
-        if (!str_contains($key, '.')) {
-            return $ini[$key] ?? null;
-        }
-
-        $split = explode('.', $key);
-
-        return $ini[$split[0]][$split[1]] ?? null;
     }
 
     /**
@@ -146,5 +125,25 @@ class QuoConfig
         }
 
         return (bool)file_put_contents($file, $str);
+    }
+
+    /**
+     * Get hostname.
+     *
+     * @return string
+     */
+    public function getHostname(): string
+    {
+        return $this->hostname;
+    }
+
+    /**
+     * Get port.
+     *
+     * @return int
+     */
+    public function getPort(): int
+    {
+        return $this->port;
     }
 }

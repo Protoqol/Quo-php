@@ -54,6 +54,31 @@ class QuoRequest
     }
 
     /**
+     * Set request headers.
+     *
+     * @param array $parameters
+     *
+     * @return bool
+     */
+    public function setHeaders(array $parameters = []): bool
+    {
+        return curl_setopt_array(
+            $this->client,
+            $parameters + [
+                CURLOPT_URL            => "http://{$this->hostname}:{$this->port}/quo-tunnel",
+                CURLOPT_HEADER         => true,
+                CURLOPT_POST           => true,
+                CURLOPT_FRESH_CONNECT  => true,
+                CURLOPT_FORBID_REUSE   => true,
+                CURLOPT_TIMEOUT        => true,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_USERAGENT      => $this->userAgent,
+                CURLOPT_HTTPHEADER     => $this->httpHeaders,
+            ]
+        );
+    }
+
+    /**
      * Set request body.
      *
      * @param QuoPayload $payload
@@ -66,28 +91,6 @@ class QuoRequest
     }
 
     /**
-     * Set request headers.
-     *
-     * @param array $parameters
-     *
-     * @return bool
-     */
-    public function setHeaders(array $parameters = []): bool
-    {
-        return curl_setopt_array($this->client, $parameters + [
-                CURLOPT_URL            => "http://{$this->hostname}:{$this->port}/quo-tunnel",
-                CURLOPT_HEADER         => true,
-                CURLOPT_POST           => true,
-                CURLOPT_FRESH_CONNECT  => true,
-                CURLOPT_FORBID_REUSE   => true,
-                CURLOPT_TIMEOUT        => true,
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_USERAGENT      => $this->userAgent,
-                CURLOPT_HTTPHEADER     => $this->httpHeaders,
-            ]);
-    }
-
-    /**
      * Get error messages from curl.
      *
      * @return string
@@ -95,16 +98,6 @@ class QuoRequest
     public function getError(): string
     {
         return $this->connectionError;
-    }
-
-    /**
-     * Capture errors before curl connection is closed.
-     *
-     * @return void
-     */
-    private function captureErrors()
-    {
-        $this->connectionError = curl_error($this->client);
     }
 
     /**
@@ -121,5 +114,15 @@ class QuoRequest
         curl_close($this->client);
 
         return $response;
+    }
+
+    /**
+     * Capture errors before curl connection is closed.
+     *
+     * @return void
+     */
+    private function captureErrors()
+    {
+        $this->connectionError = curl_error($this->client);
     }
 }

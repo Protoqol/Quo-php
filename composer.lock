@@ -4,9 +4,111 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "cca784d87e61bd5639a9f8fe1e699281",
+    "content-hash": "b2e792c52750f0976fe69b0ea310599b",
     "packages": [],
-    "packages-dev": [],
+    "packages-dev": [
+        {
+            "name": "squizlabs/php_codesniffer",
+            "version": "3.6.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/squizlabs/PHP_CodeSniffer.git",
+                "reference": "5e4e71592f69da17871dba6e80dd51bce74a351a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/squizlabs/PHP_CodeSniffer/zipball/5e4e71592f69da17871dba6e80dd51bce74a351a",
+                "reference": "5e4e71592f69da17871dba6e80dd51bce74a351a",
+                "shasum": ""
+            },
+            "require": {
+                "ext-simplexml": "*",
+                "ext-tokenizer": "*",
+                "ext-xmlwriter": "*",
+                "php": ">=5.4.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^4.0 || ^5.0 || ^6.0 || ^7.0"
+            },
+            "bin": [
+                "bin/phpcs",
+                "bin/phpcbf"
+            ],
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "3.x-dev"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-3-Clause"
+            ],
+            "authors": [
+                {
+                    "name": "Greg Sherwood",
+                    "role": "lead"
+                }
+            ],
+            "description": "PHP_CodeSniffer tokenizes PHP, JavaScript and CSS files and detects violations of a defined set of coding standards.",
+            "homepage": "https://github.com/squizlabs/PHP_CodeSniffer",
+            "keywords": [
+                "phpcs",
+                "standards"
+            ],
+            "support": {
+                "issues": "https://github.com/squizlabs/PHP_CodeSniffer/issues",
+                "source": "https://github.com/squizlabs/PHP_CodeSniffer",
+                "wiki": "https://github.com/squizlabs/PHP_CodeSniffer/wiki"
+            },
+            "time": "2021-12-12T21:44:58+00:00"
+        },
+        {
+            "name": "styleci/cli",
+            "version": "v1.2.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/StyleCI/CLI.git",
+                "reference": "5fd905953d368f8a9f4d525d57885ba4d309c18c"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/StyleCI/CLI/zipball/5fd905953d368f8a9f4d525d57885ba4d309c18c",
+                "reference": "5fd905953d368f8a9f4d525d57885ba4d309c18c",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "ext-zlib": "*",
+                "php": "^7.2.5 || ^8.0"
+            },
+            "suggest": {
+                "ext-curl": "Required for high performance HTTP transport"
+            },
+            "bin": [
+                "bin/styleci"
+            ],
+            "type": "library",
+            "extra": {
+                "bin-dir": "bin"
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "authors": [
+                {
+                    "name": "StyleCI",
+                    "email": "support@styleci.io"
+                }
+            ],
+            "description": "The CLI tool for StyleCI",
+            "support": {
+                "source": "https://github.com/StyleCI/CLI/tree/v1.2.0"
+            },
+            "time": "2021-09-06T22:43:50+00:00"
+        }
+    ],
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": [],

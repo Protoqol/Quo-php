@@ -14,6 +14,8 @@ namespace Protoqol\Quo\VarDumper\Dumper;
 use Protoqol\Quo\VarDumper\Cloner\Data;
 use Protoqol\Quo\VarDumper\Dumper\ContextProvider\ContextProviderInterface;
 
+use function get_class;
+
 /**
  * @author Kévin Thérage <therage.kevin@gmail.com>
  */
@@ -27,7 +29,7 @@ class ContextualizedDumper implements DataDumperInterface
      */
     public function __construct(DataDumperInterface $wrappedDumper, array $contextProviders)
     {
-        $this->wrappedDumper = $wrappedDumper;
+        $this->wrappedDumper    = $wrappedDumper;
         $this->contextProviders = $contextProviders;
     }
 
@@ -35,7 +37,7 @@ class ContextualizedDumper implements DataDumperInterface
     {
         $context = [];
         foreach ($this->contextProviders as $contextProvider) {
-            $context[\get_class($contextProvider)] = $contextProvider->getContext();
+            $context[get_class($contextProvider)] = $contextProvider->getContext();
         }
 
         $this->wrappedDumper->dump($data->withContext($context));

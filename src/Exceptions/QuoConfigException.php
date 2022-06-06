@@ -2,7 +2,9 @@
 
 namespace Protoqol\Quo\Exceptions;
 
-class QuoConfigException extends \Exception
+use Exception;
+
+class QuoConfigException extends Exception
 {
     //
 }

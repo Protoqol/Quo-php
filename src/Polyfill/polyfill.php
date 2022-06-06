@@ -2,7 +2,6 @@
 
 use Protoqol\Quo\Polyfill\Php72;
 
-
 /**
  * Check if $value is countable.
  *
@@ -10,6 +9,7 @@ use Protoqol\Quo\Polyfill\Php72;
  *
  * @return bool
  */
+
 if (!function_exists('is_countable')) {
     function is_countable($value): bool
     {
@@ -42,7 +42,7 @@ if (!function_exists('str_contains')) {
 if (!function_exists('str_starts_with')) {
     function str_starts_with($haystack, $needle): bool
     {
-        return 0 === strncmp($haystack, $needle, \strlen($needle));
+        return 0 === strncmp($haystack, $needle, strlen($needle));
     }
 }
 
@@ -65,9 +65,9 @@ if (!function_exists('str_ends_with')) {
             return false;
         }
 
-        $needleLength = \strlen($needle);
+        $needleLength = strlen($needle);
 
-        return $needleLength <= \strlen($haystack) && 0 === substr_compare($haystack, $needle, -$needleLength);
+        return $needleLength <= strlen($haystack) && 0 === substr_compare($haystack, $needle, -$needleLength);
     }
 }
 
@@ -84,19 +84,19 @@ if (!function_exists('get_debug_type')) {
         switch (true) {
             case null === $value:
                 return 'null';
-            case \is_bool($value):
+            case is_bool($value):
                 return 'bool';
-            case \is_string($value):
+            case is_string($value):
                 return 'string';
-            case \is_array($value):
+            case is_array($value):
                 return 'array';
-            case \is_int($value):
+            case is_int($value):
                 return 'int';
-            case \is_float($value):
+            case is_float($value):
                 return 'float';
-            case \is_object($value):
+            case is_object($value):
                 break;
-            case $value instanceof \__PHP_Incomplete_Class:
+            case $value instanceof __PHP_Incomplete_Class:
                 return '__PHP_Incomplete_Class';
             default:
                 if (null === $type = @get_resource_type($value)) {
@@ -110,7 +110,7 @@ if (!function_exists('get_debug_type')) {
                 return "resource ($type)";
         }
 
-        $class = \get_class($value);
+        $class = get_class($value);
 
         if (false === strpos($class, '@')) {
             return $class;
@@ -120,7 +120,7 @@ if (!function_exists('get_debug_type')) {
     }
 }
 
-if ('\\' === \DIRECTORY_SEPARATOR && !function_exists('sapi_windows_vt100_support')) {
+if ('\\' === DIRECTORY_SEPARATOR && !function_exists('sapi_windows_vt100_support')) {
     function sapi_windows_vt100_support($stream, $enable = null): bool
     {
         return Php72::sapi_windows_vt100_support($stream, $enable);

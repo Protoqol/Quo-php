@@ -2,6 +2,7 @@
 
 namespace Protoqol\Quo\VarDumper;
 
+use ErrorException;
 use Protoqol\Quo\VarDumper\Caster\ReflectionCaster;
 use Protoqol\Quo\VarDumper\Cloner\VarCloner;
 use Protoqol\Quo\VarDumper\Dumper\HtmlDumper;
@@ -12,7 +13,7 @@ class VarDumper
      * @param $var
      *
      * @return string|null
-     * @throws \ErrorException
+     * @throws ErrorException
      */
     public static function dump($var): ?string
     {
@@ -20,9 +21,9 @@ class VarDumper
         $cloner->addCasters(ReflectionCaster::UNSET_CLOSURE_FILE_INFO);
         $clonedVar = $cloner->cloneVar($var);
 
-        $type     = $clonedVar->getType();
+        $type = $clonedVar->getType();
         $variable = $clonedVar->getValue();
-        $count    = null;
+        $count = null;
 
         if (is_countable($variable) || is_string($variable)) {
             if (!is_string($variable)) {
@@ -33,7 +34,9 @@ class VarDumper
         }
 
         $dumper = new HtmlDumper();
-        $dumper->appendDumpPrefix("<i data-searchable='" . self::searchableString($variable) . "' class='type-$type'>$type$count</i>");
+        $dumper->appendDumpPrefix(
+            "<i data-searchable='" . self::searchableString($variable) . "' class='type-$type'>$type$count</i>"
+        );
 
         return $dumper->dump($clonedVar);
     }

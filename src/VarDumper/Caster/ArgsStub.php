@@ -12,6 +12,12 @@
 namespace Protoqol\Quo\VarDumper\Caster;
 
 use Protoqol\Quo\VarDumper\Cloner\Stub;
+use ReflectionException;
+use ReflectionFunction;
+use ReflectionMethod;
+
+use function array_slice;
+use function count;
 
 /**
  * Represents a list of function arguments.
@@ -35,15 +41,15 @@ class ArgsStub extends EnumStub
 
             return;
         }
-        if (\count($values) < \count($params)) {
-            $params = \array_slice($params, 0, \count($values));
-        } elseif (\count($values) > \count($params)) {
-            $values[] = new EnumStub(array_splice($values, \count($params)), false);
+        if (count($values) < count($params)) {
+            $params = array_slice($params, 0, count($values));
+        } elseif (count($values) > count($params)) {
+            $values[] = new EnumStub(array_splice($values, count($params)), false);
             $params[] = $variadic;
         }
         if (['...'] === $params) {
             $this->dumpKeys = false;
-            $this->value = $values[0]->value;
+            $this->value    = $values[0]->value;
         } else {
             $this->value = array_combine($params, $values);
         }
@@ -51,22 +57,22 @@ class ArgsStub extends EnumStub
 
     private static function getParameters(string $function, ?string $class): array
     {
-        if (isset(self::$parameters[$k = $class.'::'.$function])) {
+        if (isset(self::$parameters[$k = $class . '::' . $function])) {
             return self::$parameters[$k];
         }
 
         try {
-            $r = null !== $class ? new \ReflectionMethod($class, $function) : new \ReflectionFunction($function);
-        } catch (\ReflectionException $e) {
+            $r = null !== $class ? new ReflectionMethod($class, $function) : new ReflectionFunction($function);
+        } catch (ReflectionException $e) {
             return [null, null];
         }
 
         $variadic = '...';
-        $params = [];
+        $params   = [];
         foreach ($r->getParameters() as $v) {
-            $k = '$'.$v->name;
+            $k = '$' . $v->name;
             if ($v->isPassedByReference()) {
-                $k = '&'.$k;
+                $k = '&' . $k;
             }
             if ($v->isVariadic()) {
                 $variadic .= $k;

@@ -2,7 +2,9 @@
 
 namespace Protoqol\Quo\Exceptions;
 
-class QuoClientNoConnectionException extends \Exception
+use Exception;
+
+class QuoClientNoConnectionException extends Exception
 {
     //
 }

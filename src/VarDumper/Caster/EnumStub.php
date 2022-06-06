@@ -24,7 +24,7 @@ class EnumStub extends Stub
 
     public function __construct(array $values, bool $dumpKeys = true)
     {
-        $this->value = $values;
+        $this->value    = $values;
         $this->dumpKeys = $dumpKeys;
     }
 }

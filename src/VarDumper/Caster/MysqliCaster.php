@@ -11,6 +11,7 @@
 
 namespace Protoqol\Quo\VarDumper\Caster;
 
+use mysqli_driver;
 use Protoqol\Quo\VarDumper\Cloner\Stub;
 
 /**
@@ -20,7 +21,7 @@ use Protoqol\Quo\VarDumper\Cloner\Stub;
  */
 final class MysqliCaster
 {
-    public static function castMysqliDriver(\mysqli_driver $c, array $a, Stub $stub, bool $isNested): array
+    public static function castMysqliDriver(mysqli_driver $c, array $a, Stub $stub, bool $isNested): array
     {
         foreach ($a as $k => $v) {
             if (isset($c->$k)) {

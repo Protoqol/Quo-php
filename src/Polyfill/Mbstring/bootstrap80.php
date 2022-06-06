@@ -24,9 +24,20 @@ if (!function_exists('mb_decode_mimeheader')) {
     }
 }
 if (!function_exists('mb_encode_mimeheader')) {
-    function mb_encode_mimeheader(?string $string, ?string $charset = null, ?string $transfer_encoding = null, ?string $newline = "\r\n", ?int $indent = 0): string
-    {
-        return p\Mbstring::mb_encode_mimeheader((string)$string, $charset, $transfer_encoding, (string)$newline, (int)$indent);
+    function mb_encode_mimeheader(
+        ?string $string,
+        ?string $charset = null,
+        ?string $transfer_encoding = null,
+        ?string $newline = "\r\n",
+        ?int $indent = 0
+    ): string {
+        return p\Mbstring::mb_encode_mimeheader(
+            (string)$string,
+            $charset,
+            $transfer_encoding,
+            (string)$newline,
+            (int)$indent
+        );
     }
 }
 if (!function_exists('mb_decode_numericentity')) {

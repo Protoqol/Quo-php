@@ -11,7 +11,13 @@
 
 namespace Protoqol\Quo\VarDumper\Caster;
 
+use Closure;
 use Protoqol\Quo\VarDumper\Cloner\Stub;
+
+use function count;
+use function get_class;
+use function gettype;
+use function strlen;
 
 /**
  * Represents the main properties of a PHP variable, pre-casted by a caster.
@@ -24,12 +30,12 @@ class CutStub extends Stub
     {
         $this->value = $value;
 
-        switch (\gettype($value)) {
+        switch (gettype($value)) {
             case 'object':
-                $this->type = self::TYPE_OBJECT;
-                $this->class = \get_class($value);
+                $this->type  = self::TYPE_OBJECT;
+                $this->class = get_class($value);
 
-                if ($value instanceof \Closure) {
+                if ($value instanceof Closure) {
                     ReflectionCaster::castClosure($value, [], $this, true, Caster::EXCLUDE_VERBOSE);
                 }
 
@@ -37,16 +43,16 @@ class CutStub extends Stub
                 break;
 
             case 'array':
-                $this->type = self::TYPE_ARRAY;
+                $this->type  = self::TYPE_ARRAY;
                 $this->class = self::ARRAY_ASSOC;
-                $this->cut = $this->value = \count($value);
+                $this->cut   = $this->value = count($value);
                 break;
 
             case 'resource':
             case 'unknown type':
             case 'resource (closed)':
-                $this->type = self::TYPE_RESOURCE;
-                $this->handle = (int) $value;
+                $this->type   = self::TYPE_RESOURCE;
+                $this->handle = (int)$value;
                 if ('Unknown' === $this->class = @get_resource_type($value)) {
                     $this->class = 'Closed';
                 }
@@ -54,9 +60,9 @@ class CutStub extends Stub
                 break;
 
             case 'string':
-                $this->type = self::TYPE_STRING;
+                $this->type  = self::TYPE_STRING;
                 $this->class = preg_match('//u', $value) ? self::STRING_UTF8 : self::STRING_BINARY;
-                $this->cut = self::STRING_BINARY === $this->class ? \strlen($value) : mb_strlen($value, 'UTF-8');
+                $this->cut   = self::STRING_BINARY === $this->class ? strlen($value) : mb_strlen($value, 'UTF-8');
                 $this->value = '';
                 break;
         }

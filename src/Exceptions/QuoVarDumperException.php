@@ -2,7 +2,9 @@
 
 namespace Protoqol\Quo\Exceptions;
 
-class QuoVarDumperException extends \Exception
+use Exception;
+
+class QuoVarDumperException extends Exception
 {
     //
 }

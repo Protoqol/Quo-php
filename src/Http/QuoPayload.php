@@ -2,6 +2,8 @@
 
 namespace Protoqol\Quo\Http;
 
+use DateTime;
+
 class QuoPayload
 {
     /**
@@ -31,65 +33,6 @@ class QuoPayload
     }
 
     /**
-     * Make QuoPayload instance.
-     *
-     * @param string $dump
-     *
-     * @return QuoPayload
-     */
-    public static function make(string $dump): QuoPayload
-    {
-        return new self($dump);
-    }
-
-    /**
-     * Get (encoded) dump.
-     *
-     * @param bool $disableEncoding
-     *
-     * @return string
-     */
-    private function getDump(bool $disableEncoding = false): string
-    {
-        switch ($this->encoding) {
-            default:
-            case 'base64':
-                return $disableEncoding ? $this->dump : base64_encode($this->dump);
-
-        }
-    }
-
-    /**
-     * @return false|string
-     */
-    private function getCalltag()
-    {
-        return hash("md5", $this->variables);
-    }
-
-    /**
-     * @return int
-     */
-    private function getId(): int
-    {
-        $variables = count(explode(',', $this->variables));
-
-        return $variables > 1 ? $variables : 0;
-    }
-
-    /**
-     * @return string
-     */
-    private function getFileAndLineNr(): string
-    {
-        // Amount of files to backtrack to.
-        $backtrack = 6;
-
-        $backtrace = debug_backtrace()[$backtrack];
-        return $backtrace['file'] . ':' . $backtrace['line'];
-    }
-
-    /**
      * Get called variables from quo(...$args).
      *
      * @return array|string|string[]|null
@@ -109,7 +52,9 @@ class QuoPayload
             $i = 1;
 
             while (!str_contains($src, 'quo(')) {
-                $src .= (file($backtrace[$backtrack]['file']))[$backtrace[$backtrack]['line'] - $i] . ($i === 1 ? "," : "");
+                $src .= (file(
+                    $backtrace[$backtrack]['file']
+                ))[$backtrace[$backtrack]['line'] - $i] . ($i === 1 ? "," : "");
                 $i++;
             }
         }
@@ -129,23 +74,15 @@ class QuoPayload
     }
 
     /**
-     * Get current timestamp.
+     * Make QuoPayload instance.
      *
-     * @return string
-     */
-    private function getCurrentTimestamp(): string
-    {
-        return (new \DateTime)->format('H:i:s');
-    }
-
-    /**
-     * Get domain this request was sent from.
+     * @param string $dump
      *
-     * @return mixed
+     * @return QuoPayload
      */
-    private function getSenderDomain()
+    public static function make(string $dump): QuoPayload
     {
-        return $_SERVER['HTTP_HOST'];
+        return new self($dump);
     }
 
     /**
@@ -176,5 +113,71 @@ class QuoPayload
             ],
             "payload" => $this->getDump(),
         ];
+    }
+
+    /**
+     * @return int
+     */
+    private function getId(): int
+    {
+        $variables = count(explode(',', $this->variables));
+
+        return $variables > 1 ? $variables : 0;
+    }
+
+    /**
+     * @return false|string
+     */
+    private function getCalltag()
+    {
+        return hash("md5", $this->variables);
+    }
+
+    /**
+     * @return string
+     */
+    private function getFileAndLineNr(): string
+    {
+        // Amount of files to backtrack to.
+        $backtrack = 6;
+
+        $backtrace = debug_backtrace()[$backtrack];
+        return $backtrace['file'] . ':' . $backtrace['line'];
+    }
+
+    /**
+     * Get domain this request was sent from.
+     *
+     * @return mixed
+     */
+    private function getSenderDomain()
+    {
+        return $_SERVER['HTTP_HOST'];
+    }
+
+    /**
+     * Get current timestamp.
+     *
+     * @return string
+     */
+    private function getCurrentTimestamp(): string
+    {
+        return (new DateTime())->format('H:i:s');
+    }
+
+    /**
+     * Get (encoded) dump.
+     *
+     * @param bool $disableEncoding
+     *
+     * @return string
+     */
+    private function getDump(bool $disableEncoding = false): string
+    {
+        switch ($this->encoding) {
+            default:
+            case 'base64':
+                return $disableEncoding ? $this->dump : base64_encode($this->dump);
+        }
     }
 }
