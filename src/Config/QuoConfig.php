@@ -15,6 +15,13 @@ class QuoConfig
     private static $defaultIniLocation = 'meta/quo-config.ini';
 
     /**
+     * Custom absolute ini location.
+     *
+     * @var null
+     */
+    private static $customIniLocation = null;
+
+    /**
      * @var string
      */
     private $hostname;
@@ -46,6 +53,38 @@ class QuoConfig
     }
 
     /**
+     * Load config from file.
+     *
+     * @param string $absoluteFilePath
+     *
+     * @return QuoConfig
+     * @throws Exception
+     */
+    public static function load(string $absoluteFilePath): QuoConfig
+    {
+        $instance                     = QuoConfig::make();
+        $instance::$customIniLocation = $absoluteFilePath;
+        return $instance;
+    }
+
+    /**
+     * @param string $hostname
+     * @param int    $port
+     * @param bool   $store
+     *
+     * @return QuoConfig
+     */
+    public static function custom(string $hostname = 'localhost', int $port = 7312, bool $store = false): QuoConfig
+    {
+        if ($store) {
+            self::set('http.HOST', $hostname);
+            self::set('http.PORT', $port);
+        }
+
+        return new self($hostname, $port);
+    }
+
+    /**
      * Get value from meta/quo-config.ini by key.
      *
      * @param string $key
@@ -55,7 +94,11 @@ class QuoConfig
      */
     public static function get(string $key)
     {
-        $file = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . self::$defaultIniLocation;
+        if (!self::$customIniLocation) {
+            $file = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . self::$defaultIniLocation;
+        } else {
+            $file = self::$customIniLocation;
+        }
 
         if (file_exists($file) && is_readable($file)) {
             $ini = parse_ini_file($file, true);
@@ -73,29 +116,6 @@ class QuoConfig
     }
 
     /**
-     * Load config from file.
-     *
-     * @param string $absoluteFilePath
-     *
-     * @return void
-     */
-    public static function load(string $absoluteFilePath)
-    {
-        self::$defaultIniLocation = $absoluteFilePath;
-    }
-
-    /**
-     * @param string $hostname
-     * @param int    $port
-     *
-     * @return QuoConfig
-     */
-    public static function custom(string $hostname = 'localhost', int $port = 7312): QuoConfig
-    {
-        return new self($hostname, $port);
-    }
-
-    /**
      * Set value in meta/quo-config.ini.
      *
      * @param string $key
@@ -104,10 +124,15 @@ class QuoConfig
      * @return bool
      * @throws QuoConfigException
      */
-    private static function set(string $key, $value): bool
+    public static function set(string $key, $value): bool
     {
-        $file = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . self::$defaultIniLocation;
-        $str  = "";
+        if (!self::$customIniLocation) {
+            $file = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . self::$defaultIniLocation;
+        } else {
+            $file = self::$customIniLocation;
+        }
+
+        $str = "";
 
         if (file_exists($file) && is_writable($file)) {
             $ini = parse_ini_file($file, true);
@@ -132,20 +157,26 @@ class QuoConfig
     /**
      * Get hostname.
      *
+     * @param bool $ini
+     *
      * @return string
+     * @throws Exception
      */
-    public function getHostname(): string
+    public function getHostname(bool $ini = false): string
     {
-        return $this->hostname;
+        return (string)($ini ? self::get('http.HOST') : $this->hostname);
     }
 
     /**
      * Get port.
      *
+     * @param bool $ini
+     *
      * @return int
+     * @throws Exception
      */
-    public function getPort(): int
+    public function getPort(bool $ini = false): int
     {
-        return $this->port;
+        return (int)($ini ? self::get('http.PORT') : $this->port);
     }
 }

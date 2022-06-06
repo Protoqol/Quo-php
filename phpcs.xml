@@ -6,6 +6,7 @@
 
     <exclude-pattern>./src/VarDumper/*.php$</exclude-pattern>
     <exclude-pattern>./src/PolyFill/*.php$</exclude-pattern>
+    <exclude-pattern>./tests/*.php$</exclude-pattern>
 
     <rule ref="PSR12"></rule>
 </ruleset>
