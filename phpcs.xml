@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<ruleset name="PHP_CodeSniffer">
+    <description>Quo code sniffer</description>
+
+    <file>./src/</file>
+
+    <exclude-pattern>./src/VarDumper/*.php$</exclude-pattern>
+    <exclude-pattern>./src/PolyFill/*.php$</exclude-pattern>
+
+    <rule ref="PSR12"></rule>
+</ruleset>

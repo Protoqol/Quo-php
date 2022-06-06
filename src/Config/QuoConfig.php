@@ -13,10 +13,12 @@ class QuoConfig
      * @var string
      */
     private static $defaultIniLocation = 'meta/quo-config.ini';
+
     /**
      * @var string
      */
     private $hostname;
+
     /**
      * @var int
      */
