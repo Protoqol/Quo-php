@@ -6,8 +6,30 @@ on:
       - "phpcs.xml"
       - ".github/workflows/phpcs.yml"
 jobs:
-  phpcs:
+  testkit71:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-versions: [ '7.1', '8.1' ]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Install Composer dependencies
+        run: 'composer update'
+
+      - name: 'Run PHPUnit Tests'
+        run: 'php ./vendor/bin/phpunit ./tests/'
+
+      - name: 'Run PHPCS'
+        run: 'php ./vendor/bin/phpcs'
+          
+  testkit81:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-versions: [ '8.1' ]
     steps:
       - uses: actions/checkout@v2
         with:
