@@ -13,17 +13,13 @@
 # Quo for PHP
 
 [Quo is a free, open-source, zero-dependecy, client-side debugger and can be
-foundhere](https://github.com/Protoqol/Quo).
+found here](https://github.com/Protoqol/Quo).
 
-This specific package is the companion package for PHP, using a framework? No problem.
-Quo is framework-agnostic and can be run on any PHP ^7.1 project using composer.
+This specific package is a companion package for Quo for PHP.
 
-#### Looking for another companion package?
-
-- Javascript
-- Python
-- Ruby (on rails)
-- .NET
+> Using a framework? No problem.
+>
+> Quo is framework-agnostic and can run on any PHP (see requirements) project using composer.
 
 ## Installation
 
@@ -35,6 +31,12 @@ Quo is framework-agnostic and can be run on any PHP ^7.1 project using composer.
 | ext-json    | *          |
 | ext-iconv   | *          |
 | ext-curl    | *          |
+
+[//]: # (#### Looking for another companion package?)
+
+[//]: # ()
+[//]: # (- Javascript &#40;unreleased&#41;)
+
 
 #### To install run the following command.
 
