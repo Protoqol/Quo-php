@@ -10,7 +10,11 @@
     </a>
 </p>
 
-Quo is a zero-dependecy debugger, this specific package is for PHP only.
+# Quo for PHP
+
+Quo is a zero-dependecy debugger and can be found [here](https://github.com/Protoqol/Quo).
+
+This specific package is the companion package for PHP.
 
 ## Installation
 
