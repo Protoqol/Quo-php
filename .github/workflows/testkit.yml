@@ -1,5 +1,10 @@
 name: "Quo PHP testkit"
 on:
+  push:
+    paths:
+      - "**.php"
+      - "phpcs.xml"
+      - ".github/workflows/testkit.yml"
   pull_request:
     paths:
       - "**.php"

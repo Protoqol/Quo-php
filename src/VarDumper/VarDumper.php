@@ -21,9 +21,9 @@ class VarDumper
         $cloner->addCasters(ReflectionCaster::UNSET_CLOSURE_FILE_INFO);
         $clonedVar = $cloner->cloneVar($var);
 
-        $type = $clonedVar->getType();
+        $type     = $clonedVar->getType();
         $variable = $clonedVar->getValue();
-        $count = null;
+        $count    = null;
 
         if (is_countable($variable) || is_string($variable)) {
             if (!is_string($variable)) {
@@ -48,6 +48,6 @@ class VarDumper
      */
     private static function searchableString($var): string
     {
-        return json_encode($var);
+        return htmlspecialchars(json_encode($var));
     }
 }

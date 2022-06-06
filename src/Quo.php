@@ -18,6 +18,8 @@ class Quo
 
     /**
      * @param QuoConfig $config
+     *
+     * @throws Exception
      */
     public function __construct(QuoConfig $config)
     {
@@ -56,10 +58,11 @@ class Quo
             }
         }
 
+
         foreach ($args as $argument) {
             try {
                 ob_start();
-                VarDumper::dump($argument);
+                VarDumper::dump(is_string($argument) ? strip_tags($argument) : $argument);
                 $dump = ob_get_contents();
                 ob_end_clean();
                 if (!QuoResponse::responseOk($response = $quo->send($dump))) {

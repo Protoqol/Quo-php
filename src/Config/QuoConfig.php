@@ -74,7 +74,7 @@ class QuoConfig
      *
      * @return QuoConfig
      */
-    public static function custom(string $hostname = 'localhost', int $port = 7312, bool $store = false): QuoConfig
+    public static function custom(string $hostname = '127.0.0.1', int $port = 7312, bool $store = false): QuoConfig
     {
         if ($store) {
             self::set('http.HOST', $hostname);
