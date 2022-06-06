@@ -15,13 +15,19 @@ class QuoPayload
     private $encoding;
 
     /**
+     * @var array|string|string[]|null
+     */
+    private $variables;
+
+    /**
      * @param string $dump
      * @param string $encoding
      */
     public function __construct(string $dump, string $encoding = 'base64')
     {
-        $this->dump     = $dump;
-        $this->encoding = $encoding;
+        $this->dump      = $dump;
+        $this->encoding  = $encoding;
+        $this->variables = $this->getVariableNames();
     }
 
     /**
@@ -58,7 +64,7 @@ class QuoPayload
      */
     private function getCalltag()
     {
-        return hash("md5", 'test');
+        return hash("md5", $this->variables);
     }
 
     /**
@@ -66,7 +72,9 @@ class QuoPayload
      */
     private function getId(): int
     {
-        return 123;
+        $variables = count(explode(',', $this->variables));
+
+        return $variables > 1 ? $variables : 0;
     }
 
     /**
@@ -74,7 +82,10 @@ class QuoPayload
      */
     private function getFileAndLineNr(): string
     {
-        $backtrace = debug_backtrace()[6];
+        // Amount of files to backtrack to.
+        $backtrack = 6;
+
+        $backtrace = debug_backtrace()[$backtrack];
         return $backtrace['file'] . ':' . $backtrace['line'];
     }
 
@@ -86,7 +97,7 @@ class QuoPayload
     private function getVariableNames()
     {
         // Amount of files to backtrack to.
-        $backtrack = 6;
+        $backtrack = 5;
 
         $backtrace = debug_backtrace();
         $src       = (file($backtrace[$backtrack]['file']))[$backtrace[$backtrack]['line'] - 1];
@@ -161,7 +172,7 @@ class QuoPayload
                 "origin"         => $this->getFileAndLineNr(),
                 "senderOrigin"   => $this->getSenderDomain(),
                 "time"           => $this->getCurrentTimestamp(),
-                "calledVariable" => $this->getVariableNames(),
+                "calledVariable" => $this->variables,
             ],
             "payload" => $this->getDump(),
         ];

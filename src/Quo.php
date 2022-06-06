@@ -6,6 +6,7 @@ use Exception;
 use Protoqol\Quo\Config\QuoConfig;
 use Protoqol\Quo\Http\QuoPayload;
 use Protoqol\Quo\Http\QuoRequest;
+use Protoqol\Quo\Http\QuoResponse;
 use Protoqol\Quo\VarDumper\VarDumper;
 
 class Quo
@@ -20,16 +21,22 @@ class Quo
      */
     public function __construct(QuoConfig $config)
     {
-        $this->request = new QuoRequest($config->getHostname(), $config->getPort(), true);
+        $this->request = new QuoRequest($config->getHostname(), $config->getPort());
     }
 
     /**
      * Make new quo instance.
      *
      * @return array|mixed
+     * @throws Exception
      */
     public static function make()
     {
+        // Disabled on this domain.
+        if (QuoConfig::get('general.DISABLED_ON_DOMAIN') === gethostname()) {
+            return [];
+        }
+
         $args = func_get_arg(0);
 
         if (empty($args)) {
@@ -45,6 +52,7 @@ class Quo
             } catch (Exception $e) {
                 // Config error.
                 // var_dump($e);
+                return [];
             }
         }
 
@@ -54,7 +62,10 @@ class Quo
                 VarDumper::dump($argument);
                 $dump = ob_get_contents();
                 ob_end_clean();
-                $quo->send($dump);
+                if (!QuoResponse::responseOk($response = $quo->send($dump))) {
+                    // Response was not as expected
+                    // var_dump($response);
+                }
             } catch (Exception $e) {
                 // Something probably went wrong with the VarDumper.
                 // var_dump($e);
@@ -86,4 +97,5 @@ class Quo
 
         return $response;
     }
+
 }

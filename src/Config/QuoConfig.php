@@ -21,7 +21,7 @@ class QuoConfig
      *
      * @var string
      */
-    private static $defaultIniLocation = 'meta/quo.ini';
+    private static $defaultIniLocation = 'meta/quo-config.ini';
 
     /**
      * @param string $hostname
@@ -41,7 +41,7 @@ class QuoConfig
      */
     public static function make(): QuoConfig
     {
-        return new self(self::getConfigKey('http.HOSTNAME'), self::getConfigKey('http.PORT'));
+        return new self(self::get('http.HOSTNAME'), self::get('http.PORT'));
     }
 
     /**
@@ -62,7 +62,7 @@ class QuoConfig
      *
      * @return QuoConfig
      */
-    public static function set(string $hostname = 'localhost', int $port = 7312): QuoConfig
+    public static function custom(string $hostname = 'localhost', int $port = 7312): QuoConfig
     {
         return new self($hostname, $port);
     }
@@ -88,14 +88,14 @@ class QuoConfig
     }
 
     /**
-     * Get value from meta/quo.ini by key.
+     * Get value from meta/quo-config.ini by key.
      *
      * @param string $key
      *
      * @return mixed|null
      * @throws \Exception
      */
-    private static function getConfigKey(string $key)
+    public static function get(string $key)
     {
         $file = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . self::$defaultIniLocation;
 
@@ -115,7 +115,7 @@ class QuoConfig
     }
 
     /**
-     * Set value in meta/quo.ini.
+     * Set value in meta/quo-config.ini.
      *
      * @param string $key
      * @param        $value
@@ -123,10 +123,10 @@ class QuoConfig
      * @return bool
      * @throws QuoConfigException
      */
-    private static function setConfigKey(string $key, $value): bool
+    private static function set(string $key, $value): bool
     {
         $file = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . self::$defaultIniLocation;
-        $str  = "# Default quo configuration, this is for internal use only unless stated otherwise.\r\n";
+        $str  = "";
 
         if (file_exists($file) && is_writable($file)) {
             $ini = parse_ini_file($file, true);

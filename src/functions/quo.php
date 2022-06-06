@@ -10,8 +10,10 @@ if (!function_exists('quo')) {
      */
     function quo(): array
     {
-        return Quo::make(func_get_args());
+        try {
+            return Quo::make(func_get_args());
+        } catch (Exception $e) {
+            return [];
+        }
     }
-} else {
-    throw new Exception('The function `quo` has already been defined elsewhere.');
 }

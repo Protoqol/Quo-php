@@ -87,7 +87,7 @@ if (!empty($argv[2])) {
 exit(1);
 
 /**
- * Get value from meta/quo.ini by key.
+ * Get value from meta/quo-config.ini by key.
  *
  * @param string $key
  *
@@ -96,7 +96,7 @@ exit(1);
  */
 function getConfigKey(string $key)
 {
-    $file = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'meta/quo.ini';
+    $file = dirname(__DIR__) . DIRECTORY_SEPARATOR;
 
     if (file_exists($file) && is_readable($file)) {
         $ini = parse_ini_file($file, true);
@@ -118,7 +118,7 @@ function getConfigKey(string $key)
  */
 function setConfigKey(string $key, $value): bool
 {
-    $file = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'meta/quo.ini';
+    $file = dirname(__DIR__) . DIRECTORY_SEPARATOR;
     $str  = "# Default quo configuration, this is for internal use only unless stated otherwise.\r\n";
 
     if (file_exists($file) && is_writable($file)) {
