@@ -17,7 +17,7 @@ class QuoConfig
     /**
      * @var string
      */
-    $hostname;
+    private $hostname;
 
     /**
      * @var int
