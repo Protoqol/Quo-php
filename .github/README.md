@@ -1,4 +1,4 @@
-![Quo for php](assets/quo-logo.jpg)
+![Quo for php](assets/quo-php-trans.png)
 
 <p align="center">
     <a href="https://packagist.org/packages/protoqol/quo-php">	

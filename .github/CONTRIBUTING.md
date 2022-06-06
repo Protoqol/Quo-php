@@ -1,4 +1,4 @@
-![Quo for php](assets/quo-logo.jpg)
+![Quo for php](assets/quo-php-trans.png)
 
 ## Contribution guidelines
 
