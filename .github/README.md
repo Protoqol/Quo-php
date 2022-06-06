@@ -1,6 +1,9 @@
 ![Quo for php](assets/quo-php-trans.png)
 
 <p align="center">
+    <a href="https://github.com/github/docs/actions/workflows/testkit.yml">	
+       <img alt="Github action status" src="https://github.com/protoqol/quo-php/actions/workflows/testkit.yml/badge.svg">
+    </a>    
     <a href="https://packagist.org/packages/protoqol/quo-php">	
        <img alt="Packagist Version" src="https://img.shields.io/packagist/v/protoqol/quo-php.svg">
     </a>
@@ -35,8 +38,8 @@ This specific package is a companion package for Quo for PHP.
 [//]: # (#### Looking for another companion package?)
 
 [//]: # ()
-[//]: # (- Javascript &#40;unreleased&#41;)
 
+[//]: # (- Javascript &#40;unreleased&#41;)
 
 #### To install run the following command.
 
