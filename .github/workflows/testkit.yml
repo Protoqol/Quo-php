@@ -1,4 +1,4 @@
-name: "Quo PHP testkit"
+name: Testkit
 on:
   push:
     paths:
