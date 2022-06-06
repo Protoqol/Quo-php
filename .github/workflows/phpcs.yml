@@ -21,13 +21,13 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '7.1'
-          tools: phpcs, phpunit
+          tools: phpcs
 
       - name: Get php version
         run: 'php -v'
 
       - name: 'Run PHPUnit Tests'
-        run: 'phpunit ./tests/'
+        run: 'php ./vendor/bin/phpunit ./tests/'
 
       - name: 'Run PHPCS'
         run: 'phpcs'
@@ -47,13 +47,13 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.1'
-          tools: phpcs, phpunit
+          tools: phpcs
 
       - name: Get php version
         run: 'php -v'
 
       - name: 'Run PHPUnit Tests'
-        run: 'phpunit ./tests/'
+        run: 'php ./vendor/bin/phpunit ./tests/'
 
       - name: 'Run PHPCS'
         run: 'phpcs'
