@@ -10,7 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php-versions: [ '7.1', '8.1' ]
+        php-versions: [ '7.1' ]
+    name: PHP ${{ matrix.php-versions }} - ${{ matrix.operating-system }}
     steps:
       - uses: actions/checkout@v2
         with:
@@ -24,12 +25,13 @@ jobs:
 
       - name: 'Run PHPCS'
         run: 'php ./vendor/bin/phpcs'
-          
+
   testkit81:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         php-versions: [ '8.1' ]
+    name: PHP ${{ matrix.php-versions }} - ${{ matrix.operating-system }}
     steps:
       - uses: actions/checkout@v2
         with:
