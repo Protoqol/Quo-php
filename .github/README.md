@@ -15,6 +15,7 @@ Quo is a zero-dependecy debugger, this specific package is for PHP only.
 ## Installation
 
 #### Requirements
+
 | Requirement | Version    |
 |-------------|------------|
 | PHP         | ^7.1, ^8.1 |
@@ -34,7 +35,7 @@ Quo for PHP has an .ini file located at meta/quo-config.ini. This file stores th
 
 ```ini
 [general]
-# Comma seperated hostnames where Quo should not run.
+# Comma separated hostnames where Quo should not run.
 DISABLED_ON_DOMAIN = <disabled_domain>
 
 [exception]
@@ -80,14 +81,16 @@ php ./vendor/bin/quo [ -l --local ]        # Changes it to `127.0.0.1:7312`
 
 ## Custom config
 
-You can also store a quo-config file in your project root directory. To get Quo to use this follow the instructions
-below.
+You can also store a quo-config file in your project root directory.
+Create a new .ini file in wherever you want and use the command below to set it as default config.
 
 ```bash
 php ./vendor/bin/quo set-custom-config [absolute_file_path_to_ini]
 ```
 
 And you're all set!
+
+## Issues
 
 #### Issues, bugs and feature requests can be reported [here!](https://github.com/Protoqol/quo-php/issues/new/choose)
 
