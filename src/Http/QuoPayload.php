@@ -148,7 +148,7 @@ class QuoPayload
     /**
      * Get domain this request was sent from.
      *
-     * @return mixed
+     * @return false|string
      */
     private function getSenderDomain()
     {
