@@ -15,6 +15,8 @@
 
 # Quo for PHP
 
+> Quo is still in beta and should __not__ be used in production environments.
+
 [Quo is a free, open-source, client-side debugger and can be found here](https://github.com/Protoqol/Quo).
 
 This specific package is a companion package for Quo for PHP.
@@ -43,7 +45,7 @@ This specific package is a companion package for Quo for PHP.
 #### To install run the following command.
 
 ```bash
-composer require protoqol/quo-php
+composer require protoqol/quo-php --dev
 ```
 
 ## Usage
