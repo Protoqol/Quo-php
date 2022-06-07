@@ -12,14 +12,7 @@ class QuoConfig
      *
      * @var string
      */
-    private static $defaultIniLocation = 'meta/quo-config.ini';
-
-    /**
-     * Custom absolute ini location.
-     *
-     * @var null
-     */
-    private static $customIniLocation = null;
+    private $defaultIniLocation;
 
     /**
      * @var string
@@ -32,13 +25,22 @@ class QuoConfig
     private $port;
 
     /**
-     * @param string $hostname
-     * @param int    $port
+     * @var
      */
-    public function __construct(string $hostname, int $port)
+    private $cache;
+
+    /**
+     * @throws Exception
+     */
+    public function __construct()
     {
-        $this->hostname = $hostname;
-        $this->port     = $port;
+        $this->cache = new QuoCacheConfig();
+
+        if (!$this->hasConfig()) {
+            $this->defaultIniLocation = get_quo_cache_path() . "quo-internal-config.ini";
+            $this->hostname           = $this->getHostname(true);
+            $this->port               = $this->getPort(true);
+        }
     }
 
     /**
@@ -49,56 +51,20 @@ class QuoConfig
      */
     public static function make(): QuoConfig
     {
-        return new self(self::get('http.HOSTNAME'), self::get('http.PORT'));
+        return new self();
     }
 
     /**
-     * Load config from file.
-     *
-     * @param string $absoluteFilePath
-     *
-     * @return QuoConfig
-     * @throws Exception
-     */
-    public static function load(string $absoluteFilePath): QuoConfig
-    {
-        $instance                     = QuoConfig::make();
-        $instance::$customIniLocation = $absoluteFilePath;
-        return $instance;
-    }
-
-    /**
-     * @param string $hostname
-     * @param int    $port
-     * @param bool   $store
-     *
-     * @return QuoConfig
-     */
-    public static function custom(string $hostname = '127.0.0.1', int $port = 7312, bool $store = false): QuoConfig
-    {
-        if ($store) {
-            self::set('http.HOST', $hostname);
-            self::set('http.PORT', $port);
-        }
-
-        return new self($hostname, $port);
-    }
-
-    /**
-     * Get value from meta/quo-config.ini by key.
+     * Get value from config by key.
      *
      * @param string $key
      *
      * @return mixed|null
      * @throws Exception
      */
-    public static function get(string $key)
+    public function get(string $key)
     {
-        if (!self::$customIniLocation) {
-            $file = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . self::$defaultIniLocation;
-        } else {
-            $file = self::$customIniLocation;
-        }
+        $file = $this->defaultIniLocation;
 
         if (file_exists($file) && is_readable($file)) {
             $ini = parse_ini_file($file, true);
@@ -124,13 +90,9 @@ class QuoConfig
      * @return bool
      * @throws QuoConfigException
      */
-    public static function set(string $key, $value): bool
+    public function set(string $key, $value): bool
     {
-        if (!self::$customIniLocation) {
-            $file = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . self::$defaultIniLocation;
-        } else {
-            $file = self::$customIniLocation;
-        }
+        $file = $this->defaultIniLocation;
 
         $str = "";
 
@@ -164,7 +126,7 @@ class QuoConfig
      */
     public function getHostname(bool $ini = false): string
     {
-        return (string)($ini ? self::get('http.HOST') : $this->hostname);
+        return (string)($ini ? $this->get('http.HOSTNAME') : $this->hostname);
     }
 
     /**
@@ -177,6 +139,40 @@ class QuoConfig
      */
     public function getPort(bool $ini = false): int
     {
-        return (int)($ini ? self::get('http.PORT') : $this->port);
+        return (int)($ini ? $this->get('http.PORT') : $this->port);
+    }
+
+    /**
+     * Look for custom config in project.
+     *
+     * @return bool
+     * @throws Exception
+     */
+    private function hasConfig(): bool
+    {
+        if ($customConfigPath = $this->cache->getCache('CUSTOM_CONFIG_PATH')) {
+            $this->defaultIniLocation = $customConfigPath;
+            $this->hostname           = $this->getHostname(true);
+            $this->port               = $this->getPort(true);
+            return true;
+        }
+
+        // If <entry-point>.php is in root dir.
+        $firstCheck = getcwd() . DIRECTORY_SEPARATOR . "quo-config.ini";
+
+        // If <entry-point>.php is in a public directory
+        $secondCheck = dirname(getcwd()) . DIRECTORY_SEPARATOR . "quo-config.ini";
+
+        if (file_exists($firstCheck)) {
+            $this->cache->setCache('CUSTOM_CONFIG_PATH', $firstCheck);
+            return $this->hasConfig();
+        }
+
+        if (file_exists($secondCheck)) {
+            $this->cache->setCache('CUSTOM_CONFIG_PATH', $secondCheck);
+            return $this->hasConfig();
+        }
+
+        return false;
     }
 }

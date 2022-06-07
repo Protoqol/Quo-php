@@ -34,30 +34,19 @@ class Quo
      */
     public static function make()
     {
-        // Disabled on this domain.
-        if (QuoConfig::get('general.DISABLED_ON_DOMAIN') === gethostname()) {
-            return [];
-        }
-
         $args = func_get_arg(0);
 
         if (empty($args)) {
             return [];
         }
 
-        if ($args[0] instanceof QuoConfig) {
-            $quo = new Quo($args[0]);
-            unset($args[0]);
-        } else {
-            try {
-                $quo = new Quo(QuoConfig::make());
-            } catch (Exception $e) {
-                // Config error.
-                // var_dump($e);
-                return [];
-            }
+        $config = new QuoConfig();
+
+        if ($config->get('general.ENABLED') == 0) {
+            return [];
         }
 
+        $quo = new Quo($config);
 
         foreach ($args as $argument) {
             try {

@@ -1,6 +1,37 @@
 #!/usr/bin/env php
 <?php
 
+// Assume this is project root.
+if ($argv[1] === 'publish-config') {
+    $publishTo = getcwd() . DIRECTORY_SEPARATOR . "quo-config.ini";
+    $gitignore = getcwd() . DIRECTORY_SEPARATOR . ".gitignore";
+
+    if (file_exists($publishTo)) {
+        echo "\e[\033[0;33mInfo: File already exists\r\n";
+    } else {
+        $ini     = getcwd(
+            ) . DIRECTORY_SEPARATOR . "vendor" . DIRECTORY_SEPARATOR . "protoqol" . DIRECTORY_SEPARATOR . "quo-php" . DIRECTORY_SEPARATOR . "meta" . DIRECTORY_SEPARATOR . "quo-internal-config.ini";
+        $content = file_get_contents($ini);
+
+        touch($publishTo);
+        file_put_contents($publishTo, $content);
+
+        echo "Success: published quo config to $publishTo\r\n";
+    }
+
+    if (file_exists($gitignore)) {
+        if (!strpos(file_get_contents($gitignore), "quo-config.ini")) {
+            file_put_contents(
+                getcwd() . DIRECTORY_SEPARATOR . ".gitignore",
+                "\r\n# Quo config\r\nquo-config.ini",
+                FILE_APPEND
+            );
+            echo "Info: added quo-config.ini to .gitignore";
+        }
+    }
+    exit(1);
+}
+
 if (isset($argv[1]) && !isset($argv[2])) {
     switch ($argv[1]) {
         case '--help':
@@ -8,6 +39,7 @@ if (isset($argv[1]) && !isset($argv[2])) {
             echo "      
  \e[\033[1;97mQuo CLI usage\r\n
     \e[\033[0;32mCustom configuration \e[\033[0;37m`quo \$hostname \$port`\r\n
+    \e[\033[0;32mPublish config file \e[\033[0;37m`quo publish-config`\r\n
  \e[\033[0;92mPre-configurations\r\n
     \e[\033[0;32mVirtualbox preset: \e[\033[0;37m`quo [-vb --virtualbox]`\r\n
     \e[\033[0;32mDocker preset: \e[\033[0;37m`quo [-d --docker]`\e[033\ \r\n
@@ -28,10 +60,12 @@ if (isset($argv[1]) && !isset($argv[2])) {
             break;
         case '--local':
         case '-l':
-        default:
             $argv[1] = '127.0.0.1';
             $argv[2] = 7312;
             echo "Setting default configuration\r\n";
+            break;
+        default:
+            echo "Unknown command\r\n";
             break;
     }
 }
@@ -92,16 +126,21 @@ exit(1);
  * @param string $key
  *
  * @return mixed|null
- * @throws \Exception
+ * @throws Exception
  */
 function getConfigKey(string $key)
 {
-    $file = dirname(__DIR__) . DIRECTORY_SEPARATOR;
+    $file = getcwd(
+        ) . DIRECTORY_SEPARATOR . "vendor" . DIRECTORY_SEPARATOR . "protoqol" . DIRECTORY_SEPARATOR . "quo-php" . DIRECTORY_SEPARATOR . "meta" . DIRECTORY_SEPARATOR . "quo-internal-config.ini";
 
-    if (file_exists($file) && is_readable($file)) {
+    $customConfigFile = getcwd() . DIRECTORY_SEPARATOR . 'quo-config.ini';
+
+    if (file_exists($customConfigFile) && is_readable($customConfigFile)) {
+        $ini = parse_ini_file($customConfigFile, true);
+    } elseif (file_exists($file) && is_readable($file) && !isset($ini)) {
         $ini = parse_ini_file($file, true);
     } else {
-        throw new Exception('Config file not readable or missing at: ' . $file);
+        throw new Exception('Config file not readable or missing at: ' . $file . " or " . $customConfigFile);
     }
 
     $split = explode('.', $key);
@@ -118,25 +157,32 @@ function getConfigKey(string $key)
  */
 function setConfigKey(string $key, $value): bool
 {
-    $file = dirname(__DIR__) . DIRECTORY_SEPARATOR;
-    $str  = "# Default quo configuration, this is for internal use only unless stated otherwise.\r\n";
+    $file             = getcwd(
+        ) . DIRECTORY_SEPARATOR . "vendor" . DIRECTORY_SEPARATOR . "protoqol" . DIRECTORY_SEPARATOR . "quo-php" . DIRECTORY_SEPARATOR . "meta" . DIRECTORY_SEPARATOR . "quo-internal-config.ini";
+    $customConfigFile = getcwd() . DIRECTORY_SEPARATOR . 'quo-config.ini';
 
-    if (file_exists($file) && is_writable($file)) {
-        $ini = parse_ini_file($file, true);
+    if (file_exists($customConfigFile) && is_readable($customConfigFile)) {
+        $ini       = parse_ini_file($customConfigFile, true);
+        $publishTo = $customConfigFile;
+    } elseif (file_exists($file) && is_readable($file) && !isset($ini)) {
+        $ini       = parse_ini_file($file, true);
+        $publishTo = $file;
     } else {
-        throw new Exception('Config file not writeable or missing at: ' . $file);
+        throw new Exception('Config file not readable or missing at: ' . $file . " or " . $customConfigFile);
     }
+
+    $str = "# Quo configuration.\r\n";
 
     foreach ($ini as $sectionName => $section) {
         $str .= "\r\n[$sectionName]\r\n";
         foreach ($section as $entry => $val) {
             if ($key === $sectionName . '.' . $entry) {
-                $str .= $entry . '=' . $value . "\r\n";
+                $str .= $entry . ' = ' . $value . "\r\n";
             } else {
-                $str .= $entry . '=' . $val . "\r\n";
+                $str .= $entry . ' = ' . $val . "\r\n";
             }
         }
     }
 
-    return (bool)file_put_contents($file, $str);
+    return (bool)file_put_contents($publishTo, $str);
 }

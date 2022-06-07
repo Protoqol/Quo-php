@@ -1,6 +1,5 @@
 <?php
 
-use Protoqol\Quo\Config\QuoConfig;
 use Protoqol\Quo\Quo;
 
 if (!function_exists('quo')) {
@@ -19,20 +18,14 @@ if (!function_exists('quo')) {
     }
 }
 
-if (!function_exists('quoc')) {
+if (!function_exists('get_quo_cache_path')) {
     /**
-     * Custom Quo config.
+     * Get quo cache file path
      *
-     * Used on a per-call basis, the parameters passed are not stored unless $store is set to true.
-     *
-     * @param string $hostname
-     * @param int    $port
-     * @param bool   $store
-     *
-     * @return QuoConfig
+     * @return string
      */
-    function quoc(string $hostname, int $port, bool $store = false): QuoConfig
+    function get_quo_cache_path(): string
     {
-        return QuoConfig::custom($hostname, $port, $store);
+        return dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . "meta" . DIRECTORY_SEPARATOR;
     }
 }
