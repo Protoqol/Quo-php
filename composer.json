@@ -2,6 +2,7 @@
   "name": "protoqol/quo-php",
   "version": "0.3.0",
   "description": "PHP - Quo package.",
+  "license": "MIT",
   "authors": [
     {
       "name": "Quinten Justus",
