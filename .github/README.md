@@ -114,14 +114,14 @@ php ./vendor/bin/quo -d (or --docker)       # Changes it to `host.docker.interna
 php ./vendor/bin/quo -l (or --local)        # Changes it to `127.0.0.1:7312`
 ```
 
-## Custom config
+<!-- ## Custom config
 
 You can also store a quo-config file in your project root directory.
 Create a new .ini file in wherever you want and use the command below to set it as default config.
 
 ```bash
 php ./vendor/bin/quo set-custom-config [absolute_file_path_to_ini]
-```
+``` -->
 
 And you're all set!
 
