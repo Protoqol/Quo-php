@@ -15,8 +15,7 @@
 
 # Quo for PHP
 
-[Quo is a free, open-source, zero-dependecy, client-side debugger and can be
-found here](https://github.com/Protoqol/Quo).
+[Quo is a free, open-source, client-side debugger and can be found here](https://github.com/Protoqol/Quo).
 
 This specific package is a companion package for Quo for PHP.
 
@@ -47,7 +46,18 @@ This specific package is a companion package for Quo for PHP.
 composer require protoqol/quo-php
 ```
 
+## Usage
+Quo has a function called `quo()` which you can call anywhere, every variable passed to it will appear in your Quo Client.
+
+```php
+quo($var, ...$moreVars);
+```
+
 ## Configuration
+
+> Note that for the beta version of Quo a custom hostname and port can not be used yet, this will always default to 127.0.0.1:7312.
+> However, when your PHP application does not run on the top level of your OS it might be required to change the hostname and port.
+> The config hostname should always point to your top level localhost address.
 
 Quo for PHP has an .ini file located at meta/quo-config.ini. This file stores the configuration Quo uses.
 
