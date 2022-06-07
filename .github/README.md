@@ -66,11 +66,11 @@ quo($var, ...$moreVars);
 > The config hostname should always point to your top level localhost address.
 
 Quo for PHP has an .ini file located at meta/quo-config.ini. This file stores the configuration Quo uses.
-You can use a custom configuration for this, more about this in the CLI section (see "Publish Quo config").
+It is recommended to use a custom configuration for this, more about this in the CLI section (see "Publish Quo config").
 
 ```ini
 [general]
-# Comma separated hostnames where Quo should not run.
+# Should Quo be enabled in this environment
 ENABLED = 1
 
 [exception]
