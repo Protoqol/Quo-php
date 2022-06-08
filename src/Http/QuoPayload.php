@@ -53,8 +53,8 @@ class QuoPayload
 
             while (!str_contains($src, 'quo(')) {
                 $src .= (file(
-                    $backtrace[$backtrack]['file']
-                ))[$backtrace[$backtrack]['line'] - $i] . ($i === 1 ? "," : "");
+                        $backtrace[$backtrack]['file']
+                    ))[$backtrace[$backtrack]['line'] - $i] . ($i === 1 ? "," : "");
                 $i++;
             }
         }

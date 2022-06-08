@@ -4,6 +4,7 @@ namespace Protoqol\Quo;
 
 use Exception;
 use Protoqol\Quo\Config\QuoConfig;
+use Protoqol\Quo\Http\QuoCurlHandle;
 use Protoqol\Quo\Http\QuoPayload;
 use Protoqol\Quo\Http\QuoRequest;
 use Protoqol\Quo\Http\QuoResponse;
@@ -17,13 +18,14 @@ class Quo
     private $request;
 
     /**
+     * @param           $requester
      * @param QuoConfig $config
      *
      * @throws Exception
      */
-    public function __construct(QuoConfig $config)
+    public function __construct($requester, QuoConfig $config)
     {
-        $this->request = new QuoRequest($config->getHostname(), $config->getPort());
+        $this->request = new QuoRequest($requester, $config->getHostname(), $config->getPort());
     }
 
     /**
@@ -46,7 +48,9 @@ class Quo
             return [];
         }
 
-        $quo = new Quo($config);
+        $requester = QuoCurlHandle::make();
+
+        $quo = new Quo($requester, $config);
 
         foreach ($args as $argument) {
             try {
@@ -63,6 +67,8 @@ class Quo
                 // var_dump($e);
             }
         }
+
+        QuoCurlHandle::destroy($requester);
 
         return $args;
     }

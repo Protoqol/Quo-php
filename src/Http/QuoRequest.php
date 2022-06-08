@@ -37,15 +37,16 @@ class QuoRequest
     private $userAgent = "Protoqol/Quo";
 
     /**
+     * @param        $requester
      * @param string $hostname
      * @param int    $port
      * @param bool   $verbose
      */
-    public function __construct(string $hostname, int $port, bool $verbose = false)
+    public function __construct($requester, string $hostname, int $port, bool $verbose = false)
     {
         $this->hostname = $hostname;
         $this->port     = $port;
-        $this->client   = curl_init();
+        $this->client   = $requester;
         $this->setHeaders();
 
         if ($verbose) {
@@ -110,8 +111,6 @@ class QuoRequest
         $response = curl_exec($this->client);
 
         $this->captureErrors();
-
-        curl_close($this->client);
 
         return $response;
     }
