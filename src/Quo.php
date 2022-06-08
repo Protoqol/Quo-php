@@ -48,6 +48,8 @@ class Quo
             return [];
         }
 
+        $requestEntropy = mt_rand(11, 9999);
+
         $requester = QuoCurlHandle::make();
 
         $quo = new Quo($requester, $config);
@@ -58,7 +60,7 @@ class Quo
                 VarDumper::dump(is_string($argument) ? strip_tags($argument) : $argument);
                 $dump = ob_get_contents();
                 ob_end_clean();
-                if (!QuoResponse::responseOk($response = $quo->send($dump))) {
+                if (!QuoResponse::responseOk($response = $quo->send($dump, $requestEntropy))) {
                     // Response was not as expected
                     // var_dump($response);
                 }
@@ -80,9 +82,9 @@ class Quo
      *
      * @return bool|string
      */
-    private function send(string $dump)
+    private function send(string $dump, $requestEntropy)
     {
-        $this->request->setBody(QuoPayload::make($dump));
+        $this->request->setBody(QuoPayload::make($dump, $requestEntropy));
 
         $response = $this->request->send();
 

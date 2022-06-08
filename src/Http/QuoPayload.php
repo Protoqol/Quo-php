@@ -22,14 +22,21 @@ class QuoPayload
     private $variables;
 
     /**
+     * @var int
+     */
+    private $requestEntropy;
+
+    /**
      * @param string $dump
+     * @param int    $requestEntropy
      * @param string $encoding
      */
-    public function __construct(string $dump, string $encoding = 'base64')
+    public function __construct(string $dump, int $requestEntropy, string $encoding = 'base64')
     {
-        $this->dump      = $dump;
-        $this->encoding  = $encoding;
-        $this->variables = $this->getVariableNames();
+        $this->dump           = $dump;
+        $this->encoding       = $encoding;
+        $this->requestEntropy = $requestEntropy;
+        $this->variables      = $this->getVariableNames();
     }
 
     /**
@@ -77,12 +84,13 @@ class QuoPayload
      * Make QuoPayload instance.
      *
      * @param string $dump
+     * @param int    $requestEntropy
      *
      * @return QuoPayload
      */
-    public static function make(string $dump): QuoPayload
+    public static function make(string $dump, int $requestEntropy): QuoPayload
     {
-        return new self($dump);
+        return new self($dump, $requestEntropy);
     }
 
     /**
@@ -130,7 +138,7 @@ class QuoPayload
      */
     private function getCalltag()
     {
-        return hash("md5", $this->variables);
+        return hash("md5", "$this->variables-$this->requestEntropy");
     }
 
     /**
