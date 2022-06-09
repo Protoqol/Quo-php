@@ -76,8 +76,8 @@ class HtmlDumper extends CliDumper
     protected $styles;
 
     private $displayOptions      = [
-        'maxDepth'        => 1,
-        'maxStringLength' => 160,
+        'maxDepth'        => 999,
+        'maxStringLength' => 55,
         'fileLinkFormat'  => null,
     ];
     private $extraDisplayOptions = [];
