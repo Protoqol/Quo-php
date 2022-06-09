@@ -15,7 +15,7 @@
 
 # Quo for PHP
 
-> Quo is still in beta and should __not__ be used in production environments.
+> Quo is still in beta and should __not__ be used in production environments. But with the help of a config file (see CLI) you can easily disable Quo on production environments.
 
 [Quo is a free, open-source, client-side debugger and can be found here](https://github.com/Protoqol/Quo).
 
