@@ -25,6 +25,13 @@ This specific package is a companion package for Quo for PHP.
 >
 > Quo is framework-agnostic and can run on any PHP (see requirements) project using composer.
 
+### Want to help keep open-source sustainable?
+
+You can help by contributing to the code or donating using the button below!
+Both are highly appreciated and contribute directly to keeping open-source free and sustainable!
+
+[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=TJS5BKNE3JGW8)
+
 ## Installation
 
 #### Requirements
