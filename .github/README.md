@@ -1,4 +1,4 @@
-![Quo for php](assets/quo-php-trans.png)
+![Quo for php](assets/quo-companion-php.jpg)
 
 <p align="center">
     <a href="https://github.com/protoqol/quo-php/actions/workflows/testkit.yml">	

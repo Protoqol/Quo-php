@@ -34,8 +34,8 @@ jobs:
       - name: Setup Composer dependencies
         run: 'composer update'
 
-      - name: Run PHPUnit Tests
-        run: 'php ./vendor/bin/phpunit ./tests/'
+#      - name: Run PHPUnit Tests
+#        run: 'php ./vendor/bin/phpunit ./tests/'
 
       - name: Run PHPCS
         run: 'phpcs'
@@ -63,8 +63,8 @@ jobs:
       - name: Setup Composer dependencies
         run: 'composer update'
 
-      - name: Run PHPUnit Tests
-        run: 'php ./vendor/bin/phpunit ./tests/'
+#      - name: Run PHPUnit Tests
+#        run: 'php ./vendor/bin/phpunit ./tests/'
 
       - name: Run PHPCS
         run: 'phpcs'
