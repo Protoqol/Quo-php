@@ -43,5 +43,11 @@
       "name": "symfony/var-dumper",
       "url": "https://github.com/symfony/var-dumper"
     }
-  }
+  },
+  "funding": [
+    {
+      "type": "paypal",
+      "url": "https://www.paypal.com/donate/?cmd=_s-xclick&hosted_button_id=TJS5BKNE3JGW8"
+    }
+  ]
 }
