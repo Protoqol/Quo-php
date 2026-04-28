@@ -1,7 +1,7 @@
 {
   "name"       : "protoqol/quo-php",
   "version"    : "0.1.0",
-  "description": "Quo for PHP - requires Quo-Client.",
+  "description": "Companion package for the Quo debugger.",
   "license"    : "GPL-3.0-only",
   "authors"    : [
     {
