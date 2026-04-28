@@ -17,7 +17,7 @@ class QuoStackTrace
 
         foreach ($backtrace as $frame) {
             $name = $frame['function'] ?? 'unknown';
-            
+
             if (isset($frame['class'])) {
                 $name = $frame['class'] . $frame['type'] . $name;
             }
