@@ -82,7 +82,6 @@ Add an `extra` block to your `composer.json`:
 | Package       | Used for                                                                                                                     |
 |---------------|------------------------------------------------------------------------------------------------------------------------------|
 | `ext-json`    | Serializes debug data into JSON format for transmission to the Quo client.                                                   |
-| `ext-iconv`   | Provides the foundation for the `mbstring` polyfill, ensuring consistent string handling across different PHP environments.  |
 | `ext-curl`    | Transmits the captured debug payloads to the Quo desktop client over HTTP.                                                   |
 | `ramsey/uuid` | Generates unique UUIDv4 identifiers for each individual dump event, enabling the client to uniquely identify and track them. |
 
@@ -90,5 +89,5 @@ Add an `extra` block to your `composer.json`:
 
 ## License
 
-Quo is open-source software licensed under the [GPL-3 licence](.github/LICENSE).
+Quo is open-source software licensed under the [GPL-3 licence](LICENSE).
 

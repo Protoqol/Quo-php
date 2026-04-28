@@ -1,6 +1,6 @@
 {
   "name"       : "protoqol/quo-php",
-  "version"    : "2.0.0",
+  "version"    : "0.1.0",
   "description": "Quo for PHP - requires Quo-Client.",
   "license"    : "GPL-3.0-only",
   "authors"    : [
@@ -12,7 +12,6 @@
   "require"    : {
     "php"        : ">=7.1",
     "ext-json"   : "*",
-    "ext-iconv"  : "*",
     "ext-curl"   : "*",
     "ramsey/uuid": "^3.8 || ^4.0"
   },
@@ -20,17 +19,9 @@
     "phpunit/phpunit"          : "7.*|8.*|9.*|10.*|11.*|12.*|13.*",
     "squizlabs/php_codesniffer": "^3.11 || ^4.0"
   },
-  "provide"    : {
-    "ext-mbstring": "*"
-  },
-  "bin"        : [
-    "bin/quo"
-  ],
   "autoload"   : {
     "files": [
-      "src/functions/quo.php",
-      "src/Polyfill/polyfill.php",
-      "src/Polyfill/Mbstring/bootstrap.php"
+      "src/functions/quo.php"
     ],
     "psr-4": {
       "Protoqol\\Quo\\": "src/"
