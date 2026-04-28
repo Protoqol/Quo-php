@@ -3,7 +3,7 @@
 ![Build status](https://img.shields.io/github/actions/workflow/status/Protoqol/Quo-php/testkit.yml?style=flat-square&color=%23ec135b&logo=php)
 ![Packagist Version](https://img.shields.io/packagist/v/protoqol/quo-php?style=flat-square&logo=packagist&color=%23ec135b)
 ![PHP Version](https://img.shields.io/packagist/php-v/protoqol/quo-php?style=flat-square&logo=php&color=%23ec135b)
-![GPL-3.0 license](https://img.shields.io/github/license/Protoqol/Quo-php?style=flat-square&color=%23ea135a)
+![GPL-3.0 license](https://img.shields.io/crates/l/quo-rust?style=flat-square&color=%23ea135a)
 
 Quo is a cross-platform variable dumper designed to make debugging easier. It receives data from your application and
 displays it in a clean desktop interface, allowing you to inspect complex values in real-time without cluttering your
