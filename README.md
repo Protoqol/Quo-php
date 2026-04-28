@@ -73,7 +73,7 @@ Add an `extra` block to your `composer.json`:
 }
 ```
 
-> The correct port can be found in the bottom left in the Quo client.
+> The correct port can be found in the bottom left in the Quo client. Do note that it is **not** to change host.
 
 ---
 
