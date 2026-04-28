@@ -40,4 +40,4 @@ jobs:
         run: 'php ./vendor/bin/phpunit ./tests/'
 
       - name: Run PHPCS
-        run: 'php .\vendor\bin\phpcs'
+        run: 'php ./vendor/bin/phpcs'
