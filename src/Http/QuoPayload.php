@@ -214,7 +214,7 @@ class QuoPayload
      */
     private function getCalltag(): string
     {
-        return Uuid::uuid4();
+        return (string) Uuid::uuid4();
     }
 
     /**
@@ -224,9 +224,13 @@ class QuoPayload
      */
     private function getSenderDomain()
     {
-        $rootPackage = InstalledVersions::getRootPackage();
+        if (class_exists(InstalledVersions::class)) {
+            $rootPackage = InstalledVersions::getRootPackage();
 
-        return $rootPackage['name'] ?? $_SERVER['HTTP_HOST'] ?? 'PHP project';
+            return $rootPackage['name'] ?? $_SERVER['HTTP_HOST'] ?? 'PHP project';
+        }
+
+        return $_SERVER['HTTP_HOST'] ?? 'PHP project';
     }
 
     /**
