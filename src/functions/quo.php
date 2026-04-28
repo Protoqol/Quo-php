@@ -6,26 +6,46 @@ if (!function_exists('quo')) {
     /**
      * Send variables to Quo.
      *
-     * @return array variables
+     * @return void variables
      */
-    function quo(): array
+    function quo(): void
     {
         try {
-            return Quo::make(func_get_args());
+            // PHP/Quo will most likely never be fast enough that it will cause a collision.
+            $groupingHash = hash("crc32b", microtime(true));
+
+            $args = func_get_args();
+
+            foreach ($args as $index => $arg) {
+                Quo::make($arg, $index, $groupingHash);
+            }
+        } catch (Exception $e) {
+            // Ignore error for now
+            return;
+        }
+    }
+} else {
+    /**
+     * Alternative fn name; Send variables to Quo.
+     *
+     * @return array variables
+     */
+    function _quo(): array
+    {
+        try {
+            // PHP/Quo will most likely never be fast enough that it will cause a collision.
+            $groupingHash = hash("crc32b", microtime(true));
+
+            $args = func_get_args();
+
+            foreach ($args as $index => $arg) {
+                Quo::make($arg, $index, $groupingHash);
+            }
+
+            return $args;
         } catch (Exception $e) {
             return [];
         }
     }
 }
 
-if (!function_exists('get_quo_cache_path')) {
-    /**
-     * Get quo cache file path
-     *
-     * @return string
-     */
-    function get_quo_cache_path(): string
-    {
-        return dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . "meta" . DIRECTORY_SEPARATOR;
-    }
-}

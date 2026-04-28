@@ -3,176 +3,127 @@
 namespace Protoqol\Quo\Config;
 
 use Exception;
-use Protoqol\Quo\Exceptions\QuoConfigException;
+use RuntimeException;
 
 class QuoConfig
 {
     /**
-     * Default, presumed, location of ini.
+     * @var array
+     */
+    private $config;
+
+    /**
+     * @param  string|null  $basePath
      *
-     * @var string
-     */
-    private $defaultIniLocation;
-
-    /**
-     * @var string
-     */
-    private $hostname;
-
-    /**
-     * @var int
-     */
-    private $port;
-
-    /**
-     * @var
-     */
-    private $cache;
-
-    /**
      * @throws Exception
      */
-    public function __construct()
+    public function __construct(?string $basePath = null)
     {
-        $this->cache = new QuoCacheConfig();
+        $this->config = $this->loadConfig($basePath ?: getcwd());
+    }
 
-        if (!$this->hasConfig()) {
-            $this->defaultIniLocation = get_quo_cache_path() . "quo-internal-config.ini";
-            $this->hostname           = $this->getHostname(true);
-            $this->port               = $this->getPort(true);
+    /**
+     * Load config from composer.json.
+     *
+     * @param  string  $startDir
+     *
+     * @return array
+     */
+    private function loadConfig(string $startDir): array
+    {
+        try {
+            $composerPath = $this->findComposerJson($startDir);
+            $composer     = json_decode(file_get_contents($composerPath), true);
+
+            return $composer['extra']['quo-php'] ?? [];
+        } catch (Exception $e) {
+            return [];
         }
+    }
+
+    /**
+     * Find composer.json by traversing up.
+     *
+     * @param  string  $startDir
+     *
+     * @return string
+     */
+    private function findComposerJson(string $startDir): string
+    {
+        $dir = $startDir;
+
+        while ($dir !== dirname($dir)) {
+            if (file_exists($dir . DIRECTORY_SEPARATOR . 'composer.json')) {
+                return $dir . DIRECTORY_SEPARATOR . 'composer.json';
+            }
+            $dir = dirname($dir);
+        }
+
+        if (file_exists($dir . DIRECTORY_SEPARATOR . 'composer.json')) {
+            return $dir . DIRECTORY_SEPARATOR . 'composer.json';
+        }
+
+        throw new RuntimeException('composer.json not found');
     }
 
     /**
      * Make default instance of QuoConfig.
      *
+     * @param  string|null  $basePath
+     *
      * @return QuoConfig
      * @throws Exception
      */
-    public static function make(): QuoConfig
+    public static function make(?string $basePath = null): QuoConfig
     {
-        return new self();
+        return new self($basePath);
     }
 
     /**
      * Get value from config by key.
      *
-     * @param string $key
+     * @param  string  $key
      *
      * @return mixed|null
-     * @throws Exception
      */
     public function get(string $key)
     {
-        $file = $this->defaultIniLocation;
-
-        if (file_exists($file) && is_readable($file)) {
-            $ini = parse_ini_file($file, true);
-        } else {
-            throw new QuoConfigException('Config file not readable or missing at: ' . $file);
+        if (strtoupper($key) === 'GENERAL.ENABLED') {
+            return $this->config['enabled'] ?? 1;
         }
 
-        if (!str_contains($key, '.')) {
-            return $ini[$key] ?? null;
+        if (strtoupper($key) === 'HTTP.HOSTNAME') {
+            return $this->getHostname();
         }
 
-        $split = explode('.', $key);
-
-        return $ini[$split[0]][$split[1]] ?? null;
-    }
-
-    /**
-     * Set value in meta/quo-config.ini.
-     *
-     * @param string $key
-     * @param        $value
-     *
-     * @return bool
-     * @throws QuoConfigException
-     */
-    public function set(string $key, $value): bool
-    {
-        $file = $this->defaultIniLocation;
-
-        $str = "";
-
-        if (file_exists($file) && is_writable($file)) {
-            $ini = parse_ini_file($file, true);
-        } else {
-            throw new QuoConfigException('Config file not writeable or missing at: ' . $file);
+        if (strtoupper($key) === 'HTTP.PORT') {
+            return $this->getPort();
         }
 
-        foreach ($ini as $sectionName => $section) {
-            $str .= "\r\n[$sectionName]\r\n";
-            foreach ($section as $entry => $val) {
-                if ($key === $sectionName . '.' . $entry) {
-                    $str .= $entry . ' = ' . $value . "\r\n";
-                } else {
-                    $str .= $entry . ' = ' . $val . "\r\n";
-                }
-            }
-        }
-
-        return (bool)file_put_contents($file, $str);
+        return $this->config[$key] ?? null;
     }
 
     /**
      * Get hostname.
      *
-     * @param bool $ini
+     * @param  bool  $unused
      *
      * @return string
-     * @throws Exception
      */
-    public function getHostname(bool $ini = false): string
+    public function getHostname(bool $unused = false): string
     {
-        return (string)($ini ? $this->get('http.HOSTNAME') : $this->hostname);
+        return $this->config['host'] ?? '127.0.0.1';
     }
 
     /**
      * Get port.
      *
-     * @param bool $ini
+     * @param  bool  $unused
      *
      * @return int
-     * @throws Exception
      */
-    public function getPort(bool $ini = false): int
+    public function getPort(bool $unused = false): int
     {
-        return (int)($ini ? $this->get('http.PORT') : $this->port);
-    }
-
-    /**
-     * Look for custom config in project.
-     *
-     * @return bool
-     * @throws Exception
-     */
-    private function hasConfig(): bool
-    {
-        if ($customConfigPath = $this->cache->getCache('CUSTOM_CONFIG_PATH')) {
-            $this->defaultIniLocation = $customConfigPath;
-            $this->hostname           = $this->getHostname(true);
-            $this->port               = $this->getPort(true);
-            return true;
-        }
-
-        // If <entry-point>.php is in root dir.
-        $firstCheck = getcwd() . DIRECTORY_SEPARATOR . "quo-config.ini";
-
-        // If <entry-point>.php is in a public directory
-        $secondCheck = dirname(getcwd()) . DIRECTORY_SEPARATOR . "quo-config.ini";
-
-        if (file_exists($firstCheck)) {
-            $this->cache->setCache('CUSTOM_CONFIG_PATH', $firstCheck);
-            return $this->hasConfig();
-        }
-
-        if (file_exists($secondCheck)) {
-            $this->cache->setCache('CUSTOM_CONFIG_PATH', $secondCheck);
-            return $this->hasConfig();
-        }
-
-        return false;
+        return (int) ($this->config['port'] ?? 7312);
     }
 }

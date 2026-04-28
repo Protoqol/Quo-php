@@ -34,13 +34,13 @@ class QuoRequest
     /**
      * @var string
      */
-    private $userAgent = "Protoqol/Quo";
+    private $userAgent = "Protoqol/Quo-PHP";
 
     /**
      * @param        $requester
-     * @param string $hostname
-     * @param int    $port
-     * @param bool   $verbose
+     * @param  string  $hostname
+     * @param  int  $port
+     * @param  bool  $verbose
      */
     public function __construct($requester, string $hostname, int $port, bool $verbose = false)
     {
@@ -57,16 +57,17 @@ class QuoRequest
     /**
      * Set request headers.
      *
-     * @param array $parameters
+     * @param  array  $parameters
      *
      * @return bool
      */
     public function setHeaders(array $parameters = []): bool
     {
+        /** @noinspection HttpUrlsUsage */
         return curl_setopt_array(
             $this->client,
             $parameters + [
-                CURLOPT_URL            => "http://{$this->hostname}:{$this->port}/quo-tunnel",
+                CURLOPT_URL            => "http://{$this->hostname}:{$this->port}/payload",
                 CURLOPT_HEADER         => true,
                 CURLOPT_POST           => true,
                 CURLOPT_FRESH_CONNECT  => true,
@@ -82,7 +83,7 @@ class QuoRequest
     /**
      * Set request body.
      *
-     * @param QuoPayload $payload
+     * @param  QuoPayload  $payload
      *
      * @return bool
      */
@@ -120,7 +121,7 @@ class QuoRequest
      *
      * @return void
      */
-    private function captureErrors()
+    private function captureErrors(): void
     {
         $this->connectionError = curl_error($this->client);
     }

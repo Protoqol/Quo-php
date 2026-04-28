@@ -8,7 +8,6 @@ use Protoqol\Quo\Http\QuoCurlHandle;
 use Protoqol\Quo\Http\QuoPayload;
 use Protoqol\Quo\Http\QuoRequest;
 use Protoqol\Quo\Http\QuoResponse;
-use Protoqol\Quo\VarDumper\VarDumper;
 
 class Quo
 {
@@ -19,7 +18,7 @@ class Quo
 
     /**
      * @param           $requester
-     * @param QuoConfig $config
+     * @param  QuoConfig  $config
      *
      * @throws Exception
      */
@@ -29,70 +28,62 @@ class Quo
     }
 
     /**
-     * Make new quo instance.
+     * Create a new quo instance.
      *
-     * @return array|mixed
+     * @param  mixed  $arg
+     * @param  int  $argumentIndex
+     * @param  string|null  $groupingHash
+     *
+     * @return array
      * @throws Exception
      */
-    public static function make()
+    public static function make($arg, int $argumentIndex = 0, string $groupingHash = null)
     {
-        $args = func_get_arg(0);
-
-        if (empty($args)) {
+        if (empty($arg) && $arg !== 0 && $arg !== false && $arg !== "" && $arg !== []) {
             return [];
         }
 
         $config = new QuoConfig();
 
-        if ($config->get('general.ENABLED') == 0) {
+        if ($config->get('general.ENABLED') === 0) {
             return [];
         }
 
-        $requestEntropy = mt_rand(11, 9999);
-
         $requester = QuoCurlHandle::make();
 
-        $quo = new Quo($requester, $config);
+        $quo = new self($requester, $config);
 
-        foreach ($args as $argument) {
-            try {
-                ob_start();
-                VarDumper::dump(is_string($argument) ? strip_tags($argument) : $argument);
-                $dump = ob_get_contents();
-                ob_end_clean();
-                if (!QuoResponse::responseOk($response = $quo->send($dump, $requestEntropy))) {
-                    // Response was not as expected
-                    // var_dump($response);
-                }
-            } catch (Exception $e) {
-                // Something probably went wrong with the VarDumper.
-                // var_dump($e);
-            }
-        }
+        QuoResponse::responseOk($quo->send($arg, $argumentIndex, $groupingHash));
 
         QuoCurlHandle::destroy($requester);
 
-        return $args;
+        return $arg;
     }
 
     /**
-     * Send to Quo Client.
+     * Send it to Quo Client.
      *
-     * @param string $dump
+     * @param  mixed  $dump
+     * @param  int  $argumentIndex
      *
      * @return bool|string
      */
-    private function send(string $dump, $requestEntropy)
+    private function send($dump, int $argumentIndex = 0, string $groupingHash = null)
     {
-        $this->request->setBody(QuoPayload::make($dump, $requestEntropy));
+        $body = QuoPayload::make($dump, $argumentIndex, $groupingHash);
+
+        $this->request->setBody($body);
 
         $response = $this->request->send();
 
+        var_dump($response);
+
         if ($err = $this->request->getError()) {
-            // Possible causes.
+            // Possible causes. @TODO
             // - Client is not running.
+            // - Wrong host:port.
             // - Network access blocked.
-            // var_dump($err);
+            var_dump($err);
         }
 
         return $response;

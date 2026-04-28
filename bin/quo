@@ -3,15 +3,14 @@
 
 // Assume this is project root.
 if ($argv[1] === 'publish-config') {
-    $publishTo = getcwd() . DIRECTORY_SEPARATOR . "quo-config.ini";
+    $publishTo = getcwd() . DIRECTORY_SEPARATOR . "quo-config.env";
     $gitignore = getcwd() . DIRECTORY_SEPARATOR . ".gitignore";
 
     if (file_exists($publishTo)) {
         echo "\e[\033[0;33mInfo: File already exists\r\n";
     } else {
-        $ini     = getcwd(
-            ) . DIRECTORY_SEPARATOR . "vendor" . DIRECTORY_SEPARATOR . "protoqol" . DIRECTORY_SEPARATOR . "quo-php" . DIRECTORY_SEPARATOR . "meta" . DIRECTORY_SEPARATOR . "quo-internal-config.ini";
-        $content = file_get_contents($ini);
+        $env     = getcwd() . DIRECTORY_SEPARATOR . "vendor" . DIRECTORY_SEPARATOR . "protoqol" . DIRECTORY_SEPARATOR . "quo-php" . DIRECTORY_SEPARATOR . "meta" . DIRECTORY_SEPARATOR . "quo-internal-config.env";
+        $content = file_get_contents($env);
 
         touch($publishTo);
         file_put_contents($publishTo, $content);
@@ -20,13 +19,13 @@ if ($argv[1] === 'publish-config') {
     }
 
     if (file_exists($gitignore)) {
-        if (!strpos(file_get_contents($gitignore), "quo-config.ini")) {
+        if (!strpos(file_get_contents($gitignore), "quo-config.env")) {
             file_put_contents(
-                getcwd() . DIRECTORY_SEPARATOR . ".gitignore",
-                "\r\n# Quo config\r\nquo-config.ini",
-                FILE_APPEND
+                    getcwd() . DIRECTORY_SEPARATOR . ".gitignore",
+                    "\r\n# Quo config\r\nquo-config.env",
+                    FILE_APPEND
             );
-            echo "Info: added quo-config.ini to .gitignore";
+            echo "Info: added quo-config.env to .gitignore";
         }
     }
     exit(1);
@@ -69,7 +68,6 @@ if (isset($argv[1]) && !isset($argv[2])) {
             break;
     }
 }
-
 
 if (!isset($argv[1], $argv[2])) {
     echo "Not enough arguments were supplied. Expected `./quo \$hostname \$port`";
@@ -121,35 +119,48 @@ if (!empty($argv[2])) {
 exit(1);
 
 /**
- * Get value from meta/quo-config.ini by key.
+ * Get value from meta/quo-internal-config.env by key.
  *
- * @param string $key
+ * @param  string  $key
  *
  * @return mixed|null
  * @throws Exception
  */
 function getConfigKey(string $key)
 {
-    $file = getcwd(
-        ) . DIRECTORY_SEPARATOR . "vendor" . DIRECTORY_SEPARATOR . "protoqol" . DIRECTORY_SEPARATOR . "quo-php" . DIRECTORY_SEPARATOR . "meta" . DIRECTORY_SEPARATOR . "quo-internal-config.ini";
+    $file = getcwd() . DIRECTORY_SEPARATOR . "vendor" . DIRECTORY_SEPARATOR . "protoqol" . DIRECTORY_SEPARATOR . "quo-php" . DIRECTORY_SEPARATOR . "meta" . DIRECTORY_SEPARATOR . "quo-internal-config.env";
 
-    $customConfigFile = getcwd() . DIRECTORY_SEPARATOR . 'quo-config.ini';
+    $customConfigFile = getcwd() . DIRECTORY_SEPARATOR . 'quo-config.env';
+
+    $envFile = null;
 
     if (file_exists($customConfigFile) && is_readable($customConfigFile)) {
-        $ini = parse_ini_file($customConfigFile, true);
-    } elseif (file_exists($file) && is_readable($file) && !isset($ini)) {
-        $ini = parse_ini_file($file, true);
+        $envFile = $customConfigFile;
+    } elseif (file_exists($file) && is_readable($file)) {
+        $envFile = $file;
     } else {
-        throw new Exception('Config file not readable or missing at: ' . $file . " or " . $customConfigFile);
+        throw new Exception('Config file not readable or missing at: ' . $file . ' or ' . $customConfigFile);
     }
 
-    $split = explode('.', $key);
+    $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    $env   = [];
 
-    return $ini[$split[0]][$split[1]] ?? null;
+    foreach ($lines as $line) {
+        if (str_starts_with(trim($line), '#') || !str_contains($line, '=')) {
+            continue;
+        }
+
+        [$name, $value] = explode('=', $line, 2);
+        $env[trim($name)] = trim($value);
+    }
+
+    $envKey = strtoupper(str_replace('.', '_', $key));
+
+    return $env[$envKey] ?? null;
 }
 
 /**
- * @param string $key
+ * @param  string  $key
  * @param        $value
  *
  * @return bool
@@ -157,32 +168,39 @@ function getConfigKey(string $key)
  */
 function setConfigKey(string $key, $value): bool
 {
-    $file             = getcwd(
-        ) . DIRECTORY_SEPARATOR . "vendor" . DIRECTORY_SEPARATOR . "protoqol" . DIRECTORY_SEPARATOR . "quo-php" . DIRECTORY_SEPARATOR . "meta" . DIRECTORY_SEPARATOR . "quo-internal-config.ini";
-    $customConfigFile = getcwd() . DIRECTORY_SEPARATOR . 'quo-config.ini';
+    $file             = getcwd() . DIRECTORY_SEPARATOR . "vendor" . DIRECTORY_SEPARATOR . "protoqol" . DIRECTORY_SEPARATOR . "quo-php" . DIRECTORY_SEPARATOR . "meta" . DIRECTORY_SEPARATOR . "quo-internal-config.env";
+    $customConfigFile = getcwd() . DIRECTORY_SEPARATOR . 'quo-config.env';
+
+    $envFile = null;
 
     if (file_exists($customConfigFile) && is_readable($customConfigFile)) {
-        $ini       = parse_ini_file($customConfigFile, true);
-        $publishTo = $customConfigFile;
-    } elseif (file_exists($file) && is_readable($file) && !isset($ini)) {
-        $ini       = parse_ini_file($file, true);
-        $publishTo = $file;
+        $envFile = $customConfigFile;
+    } elseif (file_exists($file) && is_readable($file)) {
+        $envFile = $file;
     } else {
-        throw new Exception('Config file not readable or missing at: ' . $file . " or " . $customConfigFile);
+        throw new Exception('Config file not readable or missing at: ' . $file . ' or ' . $customConfigFile);
     }
 
-    $str = "# Quo configuration.\r\n";
+    $lines = file($envFile, FILE_IGNORE_NEW_LINES);
 
-    foreach ($ini as $sectionName => $section) {
-        $str .= "\r\n[$sectionName]\r\n";
-        foreach ($section as $entry => $val) {
-            if ($key === $sectionName . '.' . $entry) {
-                $str .= $entry . ' = ' . $value . "\r\n";
-            } else {
-                $str .= $entry . ' = ' . $val . "\r\n";
-            }
+    $envKey = strtoupper(str_replace('.', '_', $key));
+    $found  = false;
+
+    foreach ($lines as &$line) {
+        if (str_starts_with(trim($line), '#')) {
+            continue;
+        }
+
+        if (str_starts_with(trim($line), $envKey . '=')) {
+            $line  = $envKey . '=' . $value;
+            $found = true;
+            break;
         }
     }
 
-    return (bool)file_put_contents($publishTo, $str);
+    if (!$found) {
+        $lines[] = $envKey . '=' . $value;
+    }
+
+    return (bool) file_put_contents($envFile, implode("\r\n", $lines) . "\r\n");
 }

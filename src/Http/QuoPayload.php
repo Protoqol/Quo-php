@@ -2,125 +2,203 @@
 
 namespace Protoqol\Quo\Http;
 
-use DateTime;
+use Composer\InstalledVersions;
+use Protoqol\Quo\Info\QuoRuntime;
+use Protoqol\Quo\Info\QuoStackTrace;
+use Protoqol\Quo\Info\QuoSystemUsage;
+use Protoqol\Quo\Info\QuoThread;
+use Protoqol\Quo\Info\QuoTime;
+use Ramsey\Uuid\Uuid;
 
 class QuoPayload
 {
     /**
-     * @var string
+     * @var mixed
      */
-    private $dump;
+    private $variable;
 
     /**
-     * @var string
+     * @var string|null
      */
-    private $encoding;
+    private $variableName;
 
     /**
-     * @var array|string|string[]|null
+     * @var string|null
      */
-    private $variables;
+    private $grouphingHash;
 
     /**
      * @var int
      */
-    private $requestEntropy;
+    private $argumentIndex;
 
     /**
-     * @param string $dump
-     * @param int    $requestEntropy
-     * @param string $encoding
+     * @var array
      */
-    public function __construct(string $dump, int $requestEntropy, string $encoding = 'base64')
+    private $backtrace;
+
+    /**
+     * @param  mixed  $variable
+     * @param  int  $argumentIndex
+     */
+    public function __construct($variable, int $argumentIndex = 0, string $grouphingHash = null)
     {
-        $this->dump           = $dump;
-        $this->encoding       = $encoding;
-        $this->requestEntropy = $requestEntropy;
-        $this->variables      = $this->getVariableNames();
+        $this->variable      = $variable;
+        $this->argumentIndex = $argumentIndex;
+        $this->backtrace     = debug_backtrace();
+        $this->variableName  = $this->getVariableName();
+        $this->grouphingHash = $grouphingHash;
     }
 
     /**
-     * Get called variables from quo(...$args).
+     * Get called variable from quo(...$args).
      *
-     * @return array|string|string[]|null
+     * @return string|null
      */
-    private function getVariableNames()
+    private function getVariableName(): ?string
     {
-        // Amount of files to backtrack to.
-        $backtrack = 5;
+        $frame = $this->getCallerFrame();
 
-        $backtrace = debug_backtrace();
-        $src       = (file($backtrace[$backtrack]['file']))[$backtrace[$backtrack]['line'] - 1];
-        $multiLine = str_contains($src, 'quo(');
+        if (!isset($frame['file'], $frame['line']) || !$frame) {
+            return null;
+        }
 
-        if ($multiLine) {
-            $src = "";
+        $fileContent = file($frame['file']);
+        $line        = $fileContent[$frame['line'] - 1];
 
-            $i = 1;
+        // Basic parsing to find quo(...) or Quo::make(...) call and its arguments
+        if (preg_match('/(?:\bquo|_quo|Quo::make)\s*\((.*)\)/i', $line, $matches)) {
+            $argsStr = $matches[1];
 
-            while (!str_contains($src, 'quo(')) {
-                $src .= (file(
-                        $backtrace[$backtrack]['file']
-                    ))[$backtrace[$backtrack]['line'] - $i] . ($i === 1 ? "," : "");
-                $i++;
+            // Naive split by comma, ignoring commas in strings/nested calls for now
+            $args = array_map('trim', explode(',', $argsStr));
+
+            return $args[$this->argumentIndex] ?? $args[0] ?? null;
+        }
+
+        return null;
+    }
+
+    /**
+     * Find the first frame outside of Quo's internal code.
+     *
+     * @return array|null
+     */
+    private function getCallerFrame(): ?array
+    {
+        /** @noinspection ClassConstantCanBeUsedInspection */
+        $internalClasses = [
+            'Protoqol\\Quo\\Quo',
+            'Protoqol\\Quo\\Http\\QuoPayload',
+            'Protoqol\\Quo\\Http\\QuoRequest',
+            'Protoqol\\Quo\\Http\\QuoCurlHandle',
+        ];
+
+        foreach ($this->backtrace as $i => $frame) {
+            $class    = $frame['class'] ?? null;
+            $function = $frame['function'] ?? null;
+
+            if ($class && in_array($class, $internalClasses, true)) {
+                continue;
+            }
+
+            if (!$class && in_array($function, ['quo', '_quo'])) {
+                return $frame;
+            }
+
+            // If we are here, we might have passed all internal frames.
+            // Check if the previous frame was one of ours.
+            if ($i > 0) {
+                $prevFrame = $this->backtrace[$i - 1];
+                $prevClass = $prevFrame['class'] ?? null;
+                $prevFunc  = $prevFrame['function'] ?? null;
+
+                if (($prevClass && in_array($prevClass, $internalClasses, true)) || (!$prevClass && in_array($prevFunc, ['quo', '_quo']))) {
+                    return $frame;
+                }
             }
         }
 
-        $pattern      = '#(.*)quo *?\( *?(.*) *?\)(.*)#i';
-        $match        = preg_replace($pattern, '$2', $src);
-        $variableName = trim(str_replace("quo(", "", preg_replace('/\s+/', '', $match)));
-
-        $variableNames = explode(",", $variableName);
-        $variableName  = implode(",", $multiLine ? array_reverse($variableNames) : $variableNames);
-
-        if (count($variableNames) > 1) {
-            $variableName = $multiLine ? substr($variableName, 1) : $variableName;
-        }
-
-        return preg_replace("/QuoConfig::set\(.*\),/", "", $variableName);
+        return $this->backtrace[count($this->backtrace) - 1] ?? null;
     }
 
     /**
      * Make QuoPayload instance.
      *
-     * @param string $dump
-     * @param int    $requestEntropy
+     * @param  mixed  $variable
+     * @param  int  $argumentIndex
+     * @param  string|null  $groupingHash
      *
      * @return QuoPayload
      */
-    public static function make(string $dump, int $requestEntropy): QuoPayload
+    public static function make($variable, int $argumentIndex = 0, string $groupingHash = null): self
     {
-        return new self($dump, $requestEntropy);
+        return new self($variable, $argumentIndex, $groupingHash);
     }
 
     /**
-     * Get payload as json encoded string.
+     * Get payload as a JSON encoded string.
      *
      * @return false|string
      */
     public function toJson()
     {
+        var_dump($this->toArray());
         return json_encode($this->toArray());
     }
 
     /**
-     * Get payload as array.
+     * Get payload as an array.
      *
-     * @return array[]
+     * @return array
      */
     public function toArray(): array
     {
+        $stackTrace  = QuoStackTrace::get();
+        $systemUsage = QuoSystemUsage::get();
+        $varName     = $this->variableName ?? 'unknown';
+        $varType     = $this->getVariableType();
+
         return [
-            "meta"    => [
-                "id"             => $this->getId(),
-                "uid"            => $this->getCalltag(),
-                "origin"         => $this->getFileAndLineNr(),
-                "senderOrigin"   => $this->getSenderDomain(),
-                "time"           => $this->getCurrentTimestamp(),
-                "calledVariable" => $this->variables,
+            "meta"     => [
+                "id"              => $this->getId(),
+                "uid"             => $this->getCalltag(),
+                "origin"          => $this->getSenderDomain(),
+                "sender_origin"   => $this->getFileAndLineNr(),
+                "time_epoch_ms"   => QuoTime::get(),
+                "variable"        => [
+                    "var_type"       => $varType,
+                    "name"           => $varName,
+                    "value"          => (string) $this->getVariableValue(),
+                    "is_mutable"     => true,
+                    "is_constant"    => defined($varName),
+                    "is_expression"  => $this->isExpression($varName),
+                    "memory_address" => $this->getMemoryAddress(),
+                    "grouping_hash"  => $this->grouphingHash,
+                ],
+                "stack_trace"     => $stackTrace['frames'],
+                "thread_info"     => QuoThread::get(),
+                "runtime"         => QuoRuntime::get(),
+                "cpu_usage"       => $systemUsage['cpu'],
+                "memory_usage"    => $systemUsage['memory'],
+                "caller_function" => $stackTrace['caller'],
             ],
-            "payload" => $this->getDump(),
+            "language" => "php",
         ];
+    }
+
+    /**
+     * @return string
+     */
+    private function getVariableType(): string
+    {
+        $type = get_debug_type($this->variable);
+
+        if ($type === 'array') {
+            $type .= '<' . implode(', ', array_map('get_debug_type', $this->variable)) . '>';
+        }
+
+        return $type;
     }
 
     /**
@@ -128,29 +206,15 @@ class QuoPayload
      */
     private function getId(): int
     {
-        $variables = count(explode(',', $this->variables));
-
-        return $variables > 1 ? $variables : 0;
-    }
-
-    /**
-     * @return false|string
-     */
-    private function getCalltag()
-    {
-        return hash("md5", "$this->variables-$this->requestEntropy");
+        return $this->argumentIndex;
     }
 
     /**
      * @return string
      */
-    private function getFileAndLineNr(): string
+    private function getCalltag(): string
     {
-        // Amount of files to backtrack to.
-        $backtrack = 6;
-
-        $backtrace = debug_backtrace()[$backtrack];
-        return $backtrace['file'] . ':' . $backtrace['line'];
+        return Uuid::uuid4();
     }
 
     /**
@@ -160,32 +224,58 @@ class QuoPayload
      */
     private function getSenderDomain()
     {
-        return $_SERVER['HTTP_HOST'];
+        $rootPackage = InstalledVersions::getRootPackage();
+
+        return $rootPackage['name'] ?? $_SERVER['HTTP_HOST'] ?? 'PHP project';
     }
 
     /**
-     * Get current timestamp.
-     *
      * @return string
      */
-    private function getCurrentTimestamp(): string
+    private function getFileAndLineNr(): string
     {
-        return (new DateTime())->format('H:i:s');
-    }
+        $frame = $this->getCallerFrame();
 
-    /**
-     * Get (encoded) dump.
-     *
-     * @param bool $disableEncoding
-     *
-     * @return string
-     */
-    private function getDump(bool $disableEncoding = false): string
-    {
-        switch ($this->encoding) {
-            default:
-            case 'base64':
-                return $disableEncoding ? $this->dump : base64_encode($this->dump);
+        if (!isset($frame['file'], $frame['line']) || !$frame) {
+            return 'unknown:0';
         }
+
+        return $frame['file'] . ':' . $frame['line'];
+    }
+
+    /**
+     * @return mixed
+     */
+    private function getVariableValue()
+    {
+        if (is_scalar($this->variable)) {
+            return $this->variable;
+        }
+
+        $displayed = json_encode($this->variable);
+
+        return str_replace([':', '{', '}'], [' => ', '[', ']'], $displayed);
+    }
+
+    /**
+     * @param  string  $varName
+     *
+     * @return bool
+     */
+    private function isExpression(string $varName): bool
+    {
+        return !str_starts_with($varName, '$');
+    }
+
+    /**
+     * @return string
+     */
+    private function getMemoryAddress(): ?string
+    {
+        if (is_object($this->variable)) {
+            return spl_object_hash($this->variable);
+        }
+
+        return null;
     }
 }

@@ -7,12 +7,12 @@ class QuoResponse
     /**
      * Check if response contains expected body.
      *
-     * @param string $jsonResponse
+     * @param  string  $jsonResponse
      *
      * @return bool
      */
     public static function responseOk(string $jsonResponse): bool
     {
-        return str_contains($jsonResponse, '{"message": "ok"');
+        return $jsonResponse === '{"message": "ok"';
     }
 }
