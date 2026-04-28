@@ -76,14 +76,12 @@ class Quo
 
         $response = $this->request->send();
 
-        var_dump($response);
-
         if ($err = $this->request->getError()) {
             // Possible causes. @TODO
             // - Client is not running.
             // - Wrong host:port.
             // - Network access blocked.
-            var_dump($err);
+            // var_dump($err);
         }
 
         return $response;

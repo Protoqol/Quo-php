@@ -113,7 +113,10 @@ class QuoPayload
                 $prevClass = $prevFrame['class'] ?? null;
                 $prevFunc  = $prevFrame['function'] ?? null;
 
-                if (($prevClass && in_array($prevClass, $internalClasses, true)) || (!$prevClass && in_array($prevFunc, ['quo', '_quo']))) {
+                $prevClassCheck = $prevClass && in_array($prevClass, $internalClasses, true);
+                $prevFuncCheck  = in_array($prevFunc, ['quo', '_quo'], true);
+
+                if ($prevClassCheck || $prevFuncCheck) {
                     return $frame;
                 }
             }
@@ -143,7 +146,6 @@ class QuoPayload
      */
     public function toJson()
     {
-        var_dump($this->toArray());
         return json_encode($this->toArray());
     }
 
