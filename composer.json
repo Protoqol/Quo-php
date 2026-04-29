@@ -1,6 +1,6 @@
 {
   "name"       : "protoqol/quo-php",
-  "version"    : "0.1.0",
+  "version"    : "0.1.1",
   "description": "Companion package for the Quo debugger.",
   "license"    : "GPL-3.0-only",
   "authors"    : [

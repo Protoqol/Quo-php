@@ -37,7 +37,7 @@ class Quo
      * @return array
      * @throws Exception
      */
-    public static function make($arg, int $argumentIndex = 0, string $groupingHash = null)
+    public static function make($arg, int $argumentIndex = 0, ?string $groupingHash = null)
     {
         if (empty($arg) && $arg !== 0 && $arg !== false && $arg !== "" && $arg !== []) {
             return [];
@@ -68,7 +68,7 @@ class Quo
      *
      * @return bool|string
      */
-    private function send($dump, int $argumentIndex = 0, string $groupingHash = null)
+    private function send($dump, int $argumentIndex = 0, ?string $groupingHash = null)
     {
         $body = QuoPayload::make($dump, $argumentIndex, $groupingHash);
 

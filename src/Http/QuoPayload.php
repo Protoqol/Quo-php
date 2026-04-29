@@ -25,7 +25,7 @@ class QuoPayload
     /**
      * @var string|null
      */
-    private $grouphingHash;
+    private $groupingHash;
 
     /**
      * @var int
@@ -41,13 +41,13 @@ class QuoPayload
      * @param  mixed  $variable
      * @param  int  $argumentIndex
      */
-    public function __construct($variable, int $argumentIndex = 0, string $grouphingHash = null)
+    public function __construct($variable, int $argumentIndex = 0, ?string $groupingHash = null)
     {
         $this->variable      = $variable;
         $this->argumentIndex = $argumentIndex;
         $this->backtrace     = debug_backtrace();
         $this->variableName  = $this->getVariableName();
-        $this->grouphingHash = $grouphingHash;
+        $this->groupingHash  = $groupingHash;
     }
 
     /**
@@ -134,7 +134,7 @@ class QuoPayload
      *
      * @return QuoPayload
      */
-    public static function make($variable, int $argumentIndex = 0, string $groupingHash = null): self
+    public static function make($variable, int $argumentIndex = 0, ?string $groupingHash = null): self
     {
         return new self($variable, $argumentIndex, $groupingHash);
     }
@@ -176,7 +176,7 @@ class QuoPayload
                     "is_constant"    => defined($varName),
                     "is_expression"  => $this->isExpression($varName),
                     "memory_address" => $this->getMemoryAddress(),
-                    "grouping_hash"  => $this->grouphingHash,
+                    "grouping_hash"  => $this->groupingHash,
                 ],
                 "stack_trace"     => $stackTrace['frames'],
                 "thread_info"     => QuoThread::get(),

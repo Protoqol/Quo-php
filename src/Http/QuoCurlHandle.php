@@ -23,6 +23,8 @@ class QuoCurlHandle
      */
     public static function destroy($handle)
     {
-        curl_close($handle);
+        if (PHP_VERSION_ID < 80500) {
+            @curl_close($handle);
+        }
     }
 }
