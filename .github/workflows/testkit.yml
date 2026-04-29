@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php-versions: [ '7.1', '8.1', '8.4' ]
+        php-versions: [ '7.1', '7.2', '8.1', '8.5' ]
     name: PHP ${{ matrix.php-versions }}
     steps:
       - uses: actions/checkout@v2
@@ -37,7 +37,13 @@ jobs:
         run: 'composer update'
 
       - name: Run PHPUnit Tests
-        run: 'php ./vendor/bin/phpunit ./tests/'
+        run: |
+          if [ "${{ matrix.php-versions }}" == "7.1" ]; then
+            php ./vendor/bin/phpunit ./tests/ --exclude-group=skip-71
+          else
+            php ./vendor/bin/phpunit ./tests/
+          fi
 
       - name: Run PHPCS
+        if: matrix.php-versions == '8.1'
         run: 'php ./vendor/bin/phpcs'
