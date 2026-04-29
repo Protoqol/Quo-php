@@ -23,7 +23,7 @@ class QuoStackTrace
             }
 
             // Skip internal Quo calls
-            if ($name === 'quo' || $name === '_quo' || str_contains($name, 'Protoqol\\Quo')) {
+            if ($name === 'quo' || $name === '_quo' || strpos($name, 'Protoqol\\Quo') !== false) {
                 continue;
             }
 

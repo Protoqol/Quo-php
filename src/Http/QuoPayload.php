@@ -194,10 +194,16 @@ class QuoPayload
      */
     private function getVariableType(): string
     {
-        $type = get_debug_type($this->variable);
+        if (function_exists('get_debug_type')) {
+            $type = get_debug_type($this->variable);
+        } else {
+            $type = is_object($this->variable) ? get_class($this->variable) : gettype($this->variable);
+        }
 
         if ($type === 'array') {
-            $type .= '<' . implode(', ', array_map('get_debug_type', $this->variable)) . '>';
+            $type .= '<' . implode(', ', array_map(function ($item) {
+                    return function_exists('get_debug_type') ? get_debug_type($item) : (is_object($item) ? get_class($item) : gettype($item));
+                }, $this->variable)) . '>';
         }
 
         return $type;
@@ -270,7 +276,7 @@ class QuoPayload
      */
     private function isExpression(string $varName): bool
     {
-        return !str_starts_with($varName, '$');
+        return strpos($varName, '$') !== 0;
     }
 
     /**
