@@ -210,9 +210,9 @@ class QuoPayload
 
         if ($type === 'array') {
             $type .= '<' . implode(', ', array_map(function ($item) {
-                    if (function_exists('get_debug_type')) {
-                        return get_debug_type($item);
-                    }
+                if (function_exists('get_debug_type')) {
+                    return get_debug_type($item);
+                }
 
                     $itemType = is_object($item) ? get_class($item) : gettype($item);
 
@@ -223,7 +223,7 @@ class QuoPayload
                     ];
 
                     return $map[$itemType] ?? $itemType;
-                }, $this->variable)) . '>';
+            }, $this->variable)) . '>';
         }
 
         return $type;
