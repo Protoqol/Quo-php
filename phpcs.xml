@@ -7,4 +7,11 @@
     <exclude-pattern>./tests/*.php$</exclude-pattern>
 
     <rule ref="PSR12"></rule>
+
+    <rule ref="Generic.Files.LineLength">
+        <properties>
+            <property name="lineLimit" value="160"/>
+            <property name="absoluteLineLimit" value="160"/>
+        </properties>
+    </rule>
 </ruleset>
