@@ -34,7 +34,11 @@ jobs:
         run: 'php -v'
 
       - name: Setup Composer dependencies
-        run: 'composer update'
+        run: |
+          if [ "${{ matrix.php-versions }}" == "7.1" ]; then
+            composer remove donatj/mock-webserver --dev --no-update
+          fi
+          composer update
 
       - name: Run PHPUnit Tests
         run: |
