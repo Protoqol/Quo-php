@@ -198,12 +198,32 @@ class QuoPayload
             $type = get_debug_type($this->variable);
         } else {
             $type = is_object($this->variable) ? get_class($this->variable) : gettype($this->variable);
+
+            $map = [
+                'integer' => 'int',
+                'boolean' => 'bool',
+                'double'  => 'float',
+            ];
+
+            $type = $map[$type] ?? $type;
         }
 
         if ($type === 'array') {
             $type .= '<' . implode(', ', array_map(function ($item) {
-                    return function_exists('get_debug_type') ? get_debug_type($item) : (is_object($item) ? get_class($item) : gettype($item));
-            }, $this->variable)) . '>';
+                    if (function_exists('get_debug_type')) {
+                        return get_debug_type($item);
+                    }
+
+                    $itemType = is_object($item) ? get_class($item) : gettype($item);
+
+                    $map = [
+                        'integer' => 'int',
+                        'boolean' => 'bool',
+                        'double'  => 'float',
+                    ];
+
+                    return $map[$itemType] ?? $itemType;
+                }, $this->variable)) . '>';
         }
 
         return $type;
