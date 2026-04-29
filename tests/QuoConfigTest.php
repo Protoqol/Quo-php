@@ -1,7 +1,5 @@
 <?php
 
-namespace Protoqol\Quo\Tests;
-
 use PHPUnit\Framework\TestCase;
 use Protoqol\Quo\Config\QuoConfig;
 
