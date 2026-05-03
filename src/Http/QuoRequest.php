@@ -74,7 +74,7 @@ class QuoRequest
                 CURLOPT_POST           => true,
                 CURLOPT_FRESH_CONNECT  => true,
                 CURLOPT_FORBID_REUSE   => true,
-                CURLOPT_TIMEOUT        => true,
+                CURLOPT_TIMEOUT        => 10,
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_USERAGENT      => $this->userAgent,
                 CURLOPT_HTTPHEADER     => $this->httpHeaders,

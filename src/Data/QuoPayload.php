@@ -47,7 +47,7 @@ class QuoPayload
         $this->variable      = $variable;
         $this->argumentIndex = $argumentIndex;
         $this->backtrace     = debug_backtrace();
-        $this->variableName  = $this->getVariableName();
+        $this->variableName  = $this->getVariableName() ?? 'unknown-variable-name';
         $this->groupingHash  = $groupingHash;
     }
 
@@ -301,7 +301,7 @@ class QuoPayload
     private function isInsidePsysh(): bool
     {
         foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS) as $frame) {
-            if (isset($frame['class']) && substr($frame['class'], 0, strlen('Psy\\')) === 'Psy\\') {
+            if (isset($frame['class']) && strpos($frame['class'], 'Psy\\') === 0) {
                 return true;
             }
         }

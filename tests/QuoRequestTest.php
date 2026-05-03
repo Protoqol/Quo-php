@@ -58,7 +58,7 @@ class QuoRequestTest extends TestCase
 
         $variable = $input['meta']['variable'];
         $this->assertEquals('array<string>', $variable['var_type']);
-        $this->assertEquals('unknown', $variable['name']);
+        $this->assertEquals('unknown-variable-name', $variable['name']);
         $this->assertEquals('["test" => "data"]', $variable['value']);
         $this->assertTrue($variable['is_mutable']);
         $this->assertFalse($variable['is_constant']);
