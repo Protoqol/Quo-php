@@ -159,8 +159,8 @@ class QuoPayload
     {
         $stackTrace  = QuoStackTrace::get();
         $systemUsage = QuoSystemUsage::get();
-        $varName     = $this->variableName ?? 'unknown';
         $varType     = $this->getVariableType();
+        $varName     = $this->variableName ?? ($varType === "string" ? "\"{$this->getVariableValue()}\"" : (string) $this->getVariableValue());
 
         return [
             "meta"     => [
@@ -231,6 +231,20 @@ class QuoPayload
     }
 
     /**
+     * @return mixed
+     */
+    private function getVariableValue()
+    {
+        if (is_scalar($this->variable)) {
+            return $this->variable;
+        }
+
+        $displayed = json_encode($this->variable);
+
+        return str_replace([':', '{', '}'], [' => ', '[', ']'], $displayed);
+    }
+
+    /**
      * @return int
      */
     private function getId(): int
@@ -267,18 +281,7 @@ class QuoPayload
      */
     private function getFileAndLineNr(): string
     {
-        function isInsidePsysh(): bool
-        {
-            foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS) as $frame) {
-                if (isset($frame['class']) && str_starts_with($frame['class'], 'Psy\\')) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        if (PHP_SAPI === 'cli' && isInsidePsysh()) {
+        if (PHP_SAPI === 'cli' && $this->isInsidePsysh()) {
             if (isset($GLOBALS['argv']) && in_array('tinker', $GLOBALS['argv'], true)) {
                 return "Tinker session";
             }
@@ -295,18 +298,15 @@ class QuoPayload
         return $frame['file'] . ':' . $frame['line'];
     }
 
-    /**
-     * @return mixed
-     */
-    private function getVariableValue()
+    private function isInsidePsysh(): bool
     {
-        if (is_scalar($this->variable)) {
-            return $this->variable;
+        foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS) as $frame) {
+            if (isset($frame['class']) && str_starts_with($frame['class'], 'Psy\\')) {
+                return true;
+            }
         }
 
-        $displayed = json_encode($this->variable);
-
-        return str_replace([':', '{', '}'], [' => ', '[', ']'], $displayed);
+        return false;
     }
 
     /**
