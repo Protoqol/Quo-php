@@ -46,7 +46,7 @@ class QuoPayloadTest extends TestCase
 
         $decoded = json_decode($json, true);
         $this->assertEquals('php', $decoded['language']);
-        $this->assertEquals('test_value', $decoded['meta']['variable']['value']);
+        $this->assertEquals('"test_value"', $decoded['meta']['variable']['value']);
     }
 
     public function test_variable_type_detection(): void
@@ -80,7 +80,7 @@ class QuoPayloadTest extends TestCase
         $this->assertEquals('["a" => 1]', $payload->toArray()['meta']['variable']['value']);
 
         $payload = QuoPayload::make('simple string');
-        $this->assertEquals('simple string', $payload->toArray()['meta']['variable']['value']);
+        $this->assertEquals('"simple string"', $payload->toArray()['meta']['variable']['value']);
     }
 
     public function test_variable_name_detection_from_quo_call(): void
