@@ -301,7 +301,7 @@ class QuoPayload
     private function isInsidePsysh(): bool
     {
         foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS) as $frame) {
-            if (isset($frame['class']) && str_starts_with($frame['class'], 'Psy\\')) {
+            if (isset($frame['class']) && substr($frame['class'], 0, strlen('Psy\\')) === 'Psy\\') {
                 return true;
             }
         }
