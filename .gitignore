@@ -3,3 +3,4 @@ vendor/
 test.php
 src-reference/
 to_add.md
+laravel-package-test/

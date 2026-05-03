@@ -60,7 +60,7 @@ class QuoPayload
     {
         $frame = $this->getCallerFrame();
 
-        if (!isset($frame['file'], $frame['line']) || !$frame) {
+        if (!isset($frame['file'], $frame['line']) || !$frame || !file_exists($frame['file'])) {
             return null;
         }
 
@@ -267,6 +267,25 @@ class QuoPayload
      */
     private function getFileAndLineNr(): string
     {
+        function isInsidePsysh(): bool
+        {
+            foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS) as $frame) {
+                if (isset($frame['class']) && str_starts_with($frame['class'], 'Psy\\')) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        if (PHP_SAPI === 'cli' && isInsidePsysh()) {
+            if (isset($GLOBALS['argv']) && in_array('tinker', $GLOBALS['argv'], true)) {
+                return "Tinker session";
+            }
+
+            return "PsySH session";
+        }
+
         $frame = $this->getCallerFrame();
 
         if (!isset($frame['file'], $frame['line']) || !$frame) {
