@@ -4,8 +4,8 @@ namespace Protoqol\Quo;
 
 use Exception;
 use Protoqol\Quo\Config\QuoConfig;
+use Protoqol\Quo\Data\QuoPayload;
 use Protoqol\Quo\Http\QuoCurlHandle;
-use Protoqol\Quo\Http\QuoPayload;
 use Protoqol\Quo\Http\QuoRequest;
 use Protoqol\Quo\Http\QuoResponse;
 

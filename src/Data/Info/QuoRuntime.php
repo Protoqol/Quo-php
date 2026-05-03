@@ -1,6 +1,6 @@
 <?php
 
-namespace Protoqol\Quo\Info;
+namespace Protoqol\Quo\Data\Info;
 
 class QuoRuntime
 {

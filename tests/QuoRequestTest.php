@@ -3,7 +3,7 @@
 use donatj\MockWebServer\MockWebServer;
 use donatj\MockWebServer\Response;
 use PHPUnit\Framework\TestCase;
-use Protoqol\Quo\Http\QuoPayload;
+use Protoqol\Quo\Data\QuoPayload;
 use Protoqol\Quo\Http\QuoRequest;
 
 /**

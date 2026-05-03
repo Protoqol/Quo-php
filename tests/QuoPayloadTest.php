@@ -1,7 +1,7 @@
 <?php
 
 use PHPUnit\Framework\TestCase;
-use Protoqol\Quo\Http\QuoPayload;
+use Protoqol\Quo\Data\QuoPayload;
 
 class QuoPayloadTest extends TestCase
 {

@@ -1,13 +1,13 @@
 <?php
 
-namespace Protoqol\Quo\Http;
+namespace Protoqol\Quo\Data;
 
 use Composer\InstalledVersions;
-use Protoqol\Quo\Info\QuoRuntime;
-use Protoqol\Quo\Info\QuoStackTrace;
-use Protoqol\Quo\Info\QuoSystemUsage;
-use Protoqol\Quo\Info\QuoThread;
-use Protoqol\Quo\Info\QuoTime;
+use Protoqol\Quo\Data\Info\QuoRuntime;
+use Protoqol\Quo\Data\Info\QuoStackTrace;
+use Protoqol\Quo\Data\Info\QuoSystemUsage;
+use Protoqol\Quo\Data\Info\QuoThread;
+use Protoqol\Quo\Data\Info\QuoTime;
 use Ramsey\Uuid\Uuid;
 
 class QuoPayload
@@ -40,6 +40,7 @@ class QuoPayload
     /**
      * @param  mixed  $variable
      * @param  int  $argumentIndex
+     * @param  string|null  $groupingHash
      */
     public function __construct($variable, int $argumentIndex = 0, ?string $groupingHash = null)
     {
@@ -89,7 +90,7 @@ class QuoPayload
         /** @noinspection ClassConstantCanBeUsedInspection */
         $internalClasses = [
             'Protoqol\\Quo\\Quo',
-            'Protoqol\\Quo\\Http\\QuoPayload',
+            'Protoqol\\Quo\\Data\\QuoPayload',
             'Protoqol\\Quo\\Http\\QuoRequest',
             'Protoqol\\Quo\\Http\\QuoCurlHandle',
         ];
@@ -171,7 +172,7 @@ class QuoPayload
                 "variable"        => [
                     "var_type"       => $varType,
                     "name"           => $varName,
-                    "value"          => (string) $this->getVariableValue(),
+                    "value"          => $varType === "string" ? "\"{$this->getVariableValue()}\"" : (string) $this->getVariableValue(),
                     "is_mutable"     => true,
                     "is_constant"    => defined($varName),
                     "is_expression"  => $this->isExpression($varName),
@@ -210,9 +211,9 @@ class QuoPayload
 
         if ($type === 'array') {
             $type .= '<' . implode(', ', array_map(function ($item) {
-                if (function_exists('get_debug_type')) {
-                    return get_debug_type($item);
-                }
+                    if (function_exists('get_debug_type')) {
+                        return get_debug_type($item);
+                    }
 
                     $itemType = is_object($item) ? get_class($item) : gettype($item);
 
@@ -223,7 +224,7 @@ class QuoPayload
                     ];
 
                     return $map[$itemType] ?? $itemType;
-            }, $this->variable)) . '>';
+                }, $this->variable)) . '>';
         }
 
         return $type;

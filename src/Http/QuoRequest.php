@@ -2,6 +2,8 @@
 
 namespace Protoqol\Quo\Http;
 
+use Protoqol\Quo\Data\QuoPayload;
+
 class QuoRequest
 {
     /**
