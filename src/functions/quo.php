@@ -1,5 +1,6 @@
 <?php
 
+use Protoqol\Quo\Data\Info\PhpError;
 use Protoqol\Quo\Quo;
 
 if (!function_exists('quo')) {
@@ -11,7 +12,7 @@ if (!function_exists('quo')) {
     function quo(): void
     {
         try {
-            // PHP/Quo will most likely never be fast enough that it will cause a collision.
+            // PHP/Quo will most likely never be fast enough that this will cause a collision.
             $groupingHash = hash("crc32b", microtime(true));
 
             $args = func_get_args();
@@ -19,7 +20,7 @@ if (!function_exists('quo')) {
             foreach ($args as $index => $arg) {
                 Quo::make($arg, $index, $groupingHash);
             }
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             // Ignore error for now
             return;
         }
@@ -28,12 +29,12 @@ if (!function_exists('quo')) {
     /**
      * Alternative fn name; Send variables to Quo.
      *
-     * @return array variables
+     * @return void
      */
-    function _quo(): array
+    function _quo(): void
     {
         try {
-            // PHP/Quo will most likely never be fast enough that it will cause a collision.
+            // PHP/Quo will most likely never be fast enough that this will cause a collision.
             $groupingHash = hash("crc32b", microtime(true));
 
             $args = func_get_args();
@@ -41,10 +42,26 @@ if (!function_exists('quo')) {
             foreach ($args as $index => $arg) {
                 Quo::make($arg, $index, $groupingHash);
             }
-
-            return $args;
-        } catch (Exception $e) {
-            return [];
+        } catch (Throwable $e) {
+            // Ignore error for now
+            return;
         }
     }
+}
+
+function quo_error_handler(int $errno, string $errstr, string $errfile, int $errline): void
+{
+    try {
+        $phpError = new PhpError($errno, $errstr, $errfile, $errline);
+
+        Quo::make($phpError);
+    } catch (Throwable $e) {
+        // Ignore error for now
+        return;
+    }
+}
+
+function quo_exception_handler($e): void
+{
+    // @TODO
 }

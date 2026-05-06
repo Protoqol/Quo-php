@@ -2,7 +2,7 @@
 
 namespace Protoqol\Quo\Http;
 
-use Protoqol\Quo\Data\QuoPayload;
+use Protoqol\Quo\Data\QuoPayloadInterface;
 
 class QuoRequest
 {
@@ -74,7 +74,7 @@ class QuoRequest
                 CURLOPT_POST           => true,
                 CURLOPT_FRESH_CONNECT  => true,
                 CURLOPT_FORBID_REUSE   => true,
-                CURLOPT_TIMEOUT        => 10,
+                CURLOPT_TIMEOUT        => 3, // @TODO make variable
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_USERAGENT      => $this->userAgent,
                 CURLOPT_HTTPHEADER     => $this->httpHeaders,
@@ -85,12 +85,13 @@ class QuoRequest
     /**
      * Set request body.
      *
-     * @param  QuoPayload  $payload
+     * @param  QuoPayloadInterface  $payload
      *
      * @return bool
      */
-    public function setBody(QuoPayload $payload): bool
+    public function setBody(QuoPayloadInterface $payload): bool
     {
+        var_dump($payload->toJson());
         return curl_setopt($this->client, CURLOPT_POSTFIELDS, $payload->toJson());
     }
 

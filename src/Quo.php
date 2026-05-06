@@ -4,6 +4,8 @@ namespace Protoqol\Quo;
 
 use Exception;
 use Protoqol\Quo\Config\QuoConfig;
+use Protoqol\Quo\Data\Info\PhpError;
+use Protoqol\Quo\Data\QuoErrorPayload;
 use Protoqol\Quo\Data\QuoPayload;
 use Protoqol\Quo\Http\QuoCurlHandle;
 use Protoqol\Quo\Http\QuoRequest;
@@ -45,15 +47,13 @@ class Quo
 
         $config = new QuoConfig();
 
-        if ($config->get('general.ENABLED') === 0) {
-            return [];
-        }
-
         $requester = QuoCurlHandle::make();
 
         $quo = new self($requester, $config);
 
-        QuoResponse::responseOk($quo->send($arg, $argumentIndex, $groupingHash));
+        QuoResponse::responseOk(
+            $quo->send($arg, $argumentIndex, $groupingHash)
+        );
 
         QuoCurlHandle::destroy($requester);
 
@@ -63,14 +63,19 @@ class Quo
     /**
      * Send it to Quo Client.
      *
-     * @param  mixed  $dump
+     * @param  mixed  $payload
      * @param  int  $argumentIndex
+     * @param  string|null  $groupingHash
      *
      * @return bool|string
      */
-    private function send($dump, int $argumentIndex = 0, ?string $groupingHash = null)
+    private function send($payload, int $argumentIndex = 0, ?string $groupingHash = null)
     {
-        $body = QuoPayload::make($dump, $argumentIndex, $groupingHash);
+        if ($payload instanceof PhpError) {
+            $body = QuoErrorPayload::make($payload);
+        } else {
+            $body = QuoPayload::make($payload, $argumentIndex, $groupingHash);
+        }
 
         $this->request->setBody($body);
 
@@ -81,7 +86,7 @@ class Quo
             // - Client is not running.
             // - Wrong host:port.
             // - Network access blocked.
-            // var_dump($err);
+            var_dump($err);
         }
 
         return $response;

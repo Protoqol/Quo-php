@@ -10,7 +10,7 @@ use Protoqol\Quo\Data\Info\QuoThread;
 use Protoqol\Quo\Data\Info\QuoTime;
 use Ramsey\Uuid\Uuid;
 
-class QuoPayload
+class QuoPayload implements QuoPayloadInterface
 {
     /**
      * @var mixed
@@ -145,7 +145,7 @@ class QuoPayload
      *
      * @return false|string
      */
-    public function toJson()
+    public function toJson(): string
     {
         return json_encode($this->toArray());
     }
@@ -211,9 +211,9 @@ class QuoPayload
 
         if ($type === 'array') {
             $type .= '<' . implode(', ', array_map(function ($item) {
-                if (function_exists('get_debug_type')) {
-                    return get_debug_type($item);
-                }
+                    if (function_exists('get_debug_type')) {
+                        return get_debug_type($item);
+                    }
 
                     $itemType = is_object($item) ? get_class($item) : gettype($item);
 
@@ -224,7 +224,7 @@ class QuoPayload
                     ];
 
                     return $map[$itemType] ?? $itemType;
-            }, $this->variable)) . '>';
+                }, $this->variable)) . '>';
         }
 
         return $type;
